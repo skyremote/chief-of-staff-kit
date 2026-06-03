@@ -1,0 +1,20 @@
+{
+  "name": "chief-of-staff-kit",
+  "version": "0.1.0",
+  "description": "Install a customised team of AI agents — a chief-of-staff orchestrator that routes to division leads and specialists — tailored to your own business, departments, or the people you manage. Works with Claude Code and Codex.",
+  "author": {
+    "name": "skyremote",
+    "url": "https://github.com/skyremote"
+  },
+  "homepage": "https://github.com/skyremote/chief-of-staff-kit",
+  "repository": "https://github.com/skyremote/chief-of-staff-kit",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "subagents",
+    "orchestration",
+    "chief-of-staff",
+    "agent-team",
+    "codex"
+  ]
+}

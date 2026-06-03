@@ -1,0 +1,18 @@
+{
+  "name": "skyremote",
+  "owner": {
+    "name": "skyremote",
+    "url": "https://github.com/skyremote"
+  },
+  "metadata": {
+    "description": "A customisable team of AI agents for Claude Code and Codex.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "chief-of-staff-kit",
+      "source": "./",
+      "description": "Install a chief-of-staff orchestrator that routes to division leads and specialists, customised to your own org via a short interview."
+    }
+  ]
+}

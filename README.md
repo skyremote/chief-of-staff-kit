@@ -38,18 +38,23 @@ of options.
 
 ## Install (Claude Code)
 
-```text
-/plugin marketplace add skyremote/chief-of-staff-kit
-/plugin install chief-of-staff-kit@skyremote
-```
+You need [Claude Code](https://claude.com/claude-code). Then it's about two minutes:
 
-Then just tell Claude:
-
-> **install the crew**
-
-The `install-crew` skill runs an interview (or reads your existing `CLAUDE.md`),
-confirms a plan, and writes your agents into your project (`.claude/agents/`) or
-globally (`~/.claude/agents/`). Start a new session and invoke `@chief-of-staff`.
+1. **Add the marketplace:**
+   ```text
+   /plugin marketplace add skyremote/chief-of-staff-kit
+   ```
+2. **Install the plugin:**
+   ```text
+   /plugin install chief-of-staff-kit@skyremote
+   ```
+   (Or run `/plugin`, choose **Browse marketplaces**, and install **chief-of-staff-kit**
+   from the menu.)
+3. **Restart** Claude Code (start a new session) so the plugin loads.
+4. **Tell Claude:** `install the crew`. The installer interviews you (or reads your
+   existing `CLAUDE.md`), shows you a plan to approve, then writes your agents into your
+   project (`.claude/agents/`) or globally (`~/.claude/agents/`).
+5. **Restart once more**, then invoke `@chief-of-staff` for anything cross-cutting.
 
 ### Manual install (no marketplace)
 

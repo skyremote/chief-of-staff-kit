@@ -2,13 +2,13 @@
 
 Your installed agent team: one **orchestrator**, one or more **division leads**, and
 a bench of shared **specialists**. Each agent's personality, scope, and hand-offs
-live in its own `*.md` file in this folder. This README is the map: who's who, when
+live in its own agent file (`*.md` for Claude Code, `*.toml` for Codex). This README is the map: who's who, when
 they work alone vs together, and how to run them.
 
 ## Where these live
 
-These agent files live in your agents directory. Claude Code loads them at the start
-of a session — edits take effect on the **next** session, not the current one. If
+These agent files live in your agents directory. Claude Code and Codex load agent
+configuration at session start — edits take effect on the **next** session. If
 you move or add an agent file, keep it in this same directory so it is discovered.
 
 ## The org chart
@@ -67,8 +67,8 @@ deliverables.
 
 ## How to run them
 
-- **Chat (automatic delegation):** just describe the task in a normal session —
-  Claude delegates to the right agent based on each agent's `description`. This is the
+- **Chat (delegation):** describe the task and ask the root session to use the crew —
+  the runtime delegates to the right agent based on each agent's `description`. This is the
   usual path; you rarely need to name an agent explicitly.
 - **Name or @-mention an agent:** to force a specific agent, ask for it by name
   ("ask the *<lead>* to…") or `@`-mention it. Use this when auto-delegation picks the
@@ -84,7 +84,7 @@ deliverables.
 
 ## Adding and editing agents
 
-Add a new agent as a `*.md` file in this directory, keep each agent's scope
+Add a new agent in the native format for this directory, keep each agent's scope
 non-overlapping with the others, and add a row to the roster above so the team stays
 legible. When a new domain appears that no existing lead owns, give it its own lead
 rather than overloading an unrelated one.

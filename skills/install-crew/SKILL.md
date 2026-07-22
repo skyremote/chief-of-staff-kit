@@ -18,7 +18,8 @@ The team is one shape, instantiated to fit anyone:
                  (any lead pulls in any specialist)
    architect · code-auditor · program-manager · problem-solver
    presentation-writer · voice-scriptwriter · growth-marketer
-   product-designer · ops-steward                              ← shared specialists
+   product-designer · ops-steward · content-engine
+   web-builder · video-editor · skool-writer-and-publish      ← shared specialists
    inbox-reader · email-writer · notes-archivist · memory-harvester  ← opt-in comms
 ```
 
@@ -37,7 +38,7 @@ the user's business facts — ask, or leave a clean placeholder and say so.
 
 - `templates/orchestrator.md` — the chief-of-staff template.
 - `templates/division-lead.md` — ONE lead template, instantiated once per division.
-- `templates/specialists/*.md` — the 9 generic specialists.
+- `templates/specialists/*.md` — the 13 generic specialists.
 - `templates/comms/*.md` — the 4 integration-dependent agents (opt-in).
 - `references/rendering-claude-code.md` — how to write Claude Code subagents.
 - `references/rendering-codex.md` — how to write Codex prompts + AGENTS.md.
@@ -53,10 +54,10 @@ before you fill it.
 Ask which the user runs (offer both):
 
 - **Claude Code** → render native subagents (`references/rendering-claude-code.md`).
-- **Codex** → render invokable prompts + a root `AGENTS.md`
-  (`references/rendering-codex.md`). Note honestly: Codex has no auto-orchestrating
-  subagent system, so in Codex the personas are invoked manually and `AGENTS.md`
-  documents the routing doctrine — the *content* ports, the auto-delegation does not.
+- **Codex** → render native custom-agent TOML files + a root `AGENTS.md`
+  (`references/rendering-codex.md`). Current Codex releases can spawn project or global
+  custom agents. Detect the installed Codex version before rendering and use the legacy
+  prompt-file fallback in that reference only for an older release without custom agents.
 - **Both** → render each from the same answers.
 
 ## Step 1 — Read before you ask
@@ -85,7 +86,7 @@ multiple-choice where you can. Keep it tight.
    the standing facts it must always know, and who it hands off to. A division can be
    a company, a department, a product, a client book, or a report you manage. (If the
    user has only one domain, one lead is fine — the orchestrator still adds value.)
-2. **Specialists** → which of the 9 to include (default: all). Drop any that don't
+2. **Specialists** → which of the 13 to include (default: all). Drop any that don't
    fit how they work.
 3. **Comms agents** (opt-in, default off) → `inbox-reader`, `email-writer`,
    `notes-archivist`, `memory-harvester`. Only install the ones the user wants, and

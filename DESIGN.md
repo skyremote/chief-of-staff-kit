@@ -35,8 +35,15 @@ regenerates the orchestrator's roster to match.
 ## Two render targets, one source
 
 `references/rendering-claude-code.md` emits native subagents. `rendering-codex.md`
-emits invokable prompts + an `AGENTS.md` playbook. Codex has no auto-orchestration,
-so parity is *content*, not *mechanism* — stated honestly to users.
+emits native Codex custom-agent TOML files plus an `AGENTS.md` routing playbook. A
+legacy prompt-file fallback remains documented for older Codex releases.
+
+## Upgrade contract
+
+The installer owns first-time rendering. `update-crew` owns existing installations:
+it inventories before writing, preserves user-specific divisions and workspace context,
+shows a change plan, and versions backups. Plugin version bumps are required because
+Claude Code uses the manifest version as the update cache key.
 
 ## Provenance
 

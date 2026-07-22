@@ -1,117 +1,102 @@
 # Rendering the crew for Codex
 
-This reference tells the installer how to render the crew templates for **Codex**.
-Read it before generating any Codex output.
-
-## The mechanism gap (read this first)
-
-Codex has **no auto-orchestrating subagent system**. There is no equivalent of Claude
-Code's automatic delegation, and **subagents cannot be spawned**. A single Codex agent
-runs the session; it cannot fan work out to a team that executes in parallel under it.
-
-So parity with the Claude Code crew is **content parity, not mechanism parity**. We
-reproduce the *thinking* — the roles, the heuristics, the output contracts, the routing
-and alone-vs-council doctrine — and make it invokable by hand. We do **not** promise
-automatic delegation, because Codex cannot do it. Be honest about this everywhere it
-matters; do not imply a capability the runtime lacks.
-
-What this means in practice:
-- Each persona becomes a prompt the user **invokes manually**.
-- The routing doctrine becomes **documentation the user (or the single agent) reads and
-  applies by hand**, not an engine that dispatches.
-- "Council" sessions are run by the single agent **playing each role in turn**, or by the
-  user pasting personas in sequence — not by concurrent agents.
+Current Codex releases support native custom agents and one-level subagent workflows in
+the desktop app, CLI and IDE. Render the crew into that mechanism. Use the legacy prompt
+fallback at the end only when the installed Codex build genuinely lacks custom agents.
 
 ## What to generate
 
-For Codex, produce two things:
+For the selected project or global scope, produce:
 
-1. **One prompt file per persona** under `~/.codex/prompts/<role>.md`.
-2. **One root `AGENTS.md`** that documents the whole team, the roster, and the full
-   routing / alone-vs-council doctrine.
+1. one TOML file per persona under `.codex/agents/` or `~/.codex/agents/`;
+2. one `AGENTS.md` at the workspace root (or a clearly delimited team section in an
+   existing file) containing the routing and delegation doctrine;
+3. a team README with the installed roster and update instructions.
 
-### 1. Persona prompt files — `~/.codex/prompts/<role>.md`
+Do not overwrite an existing `AGENTS.md`. Merge a versioned, clearly headed section and
+preserve unrelated project rules.
 
-Write each persona (orchestrator, every division lead, every specialist, every comms
-agent) as its own file under `~/.codex/prompts/`. Use the persona's kebab-case slug as
-the filename, e.g. `~/.codex/prompts/architect.md`, `~/.codex/prompts/ops-steward.md`.
+## Custom-agent TOML
 
-These files become **invokable, slash-style prompts** inside Codex: the user calls a
-persona by name to load that operating doctrine into the current session. Author them so
-they read as a direct instruction to the agent ("You are the … You do … You hand off
-to …").
+Each agent file requires `name`, `description` and `developer_instructions`:
 
-Conversion rules for each file:
-- **Strip the Claude Code YAML frontmatter.** Codex prompt files are plain prompt bodies,
-  not subagent definitions. Drop the `name / description / tools / model / color` block.
-  If a short title line helps the user identify the prompt, use a plain Markdown heading
-  at the top instead.
-- **Keep the full body** — role, heuristics, working style, output contract, and the
-  hand-off map. This is the substance that carries over; preserve its bite.
-- **Rewrite hand-offs as manual instructions.** Where the Claude Code persona says it
-  "hands off to" or "delegates to" another agent, phrase it as: *recommend the user
-  invoke the `<other-role>` prompt next*, or *switch to the `<other-role>` persona*. Make
-  clear the agent is naming the next role, not silently dispatching to it.
-- Keep `{{WORKSPACE_CONTEXT}}` and any other placeholders inline (see "Placeholders"
-  below) — they are filled identically to the Claude Code path.
+```toml
+name = "code-auditor"
+description = "Read-only code reviewer focused on correctness, security and missing tests."
+developer_instructions = """
+You are the code auditor...
+"""
+```
 
-### 2. Root `AGENTS.md`
+Use the persona's kebab-case name as the filename. Convert the Claude template as follows:
 
-Write a single `AGENTS.md` at the workspace root. Codex reads `AGENTS.md` automatically as
-standing context, so this is where the team lives as a whole. It must contain:
+- map frontmatter `name` and `description` to TOML strings;
+- place the full persona body, with resolved placeholders, in
+  `developer_instructions = """..."""`;
+- omit Claude-only `tools`, `color` and `model` keys unless the user explicitly wants a
+  Codex model override;
+- when a model override is requested, use current Codex model IDs and
+  `model_reasoning_effort`; otherwise inherit the parent session;
+- translate "Agent tool" or Claude-specific invocation language into "spawn/delegate to
+  the named custom agent";
+- keep subagents aware that they are not alone in the workspace and must not revert other
+  agents' edits.
 
-- **A team overview** — what the crew is and how it is meant to be used in Codex.
-- **The roster** — every persona with its one-line scope, plus the exact prompt-file path
-  (`~/.codex/prompts/<role>.md`) so the user knows what to invoke.
-- **The full routing doctrine** — the same orchestrator routing logic from the Claude Code
-  build (which role owns what, who to reach for given a request type), written so the
-  single agent can self-route or the user can pick the right persona.
-- **The alone-vs-council doctrine** — when one role is enough, and when a decision wants
-  several roles weighing in. In Codex, spell out that a "council" is run by the single
-  agent **playing each role in turn** (or the user invoking each persona in sequence and
-  synthesising), since concurrent subagents do not exist.
-- **Two ways to use a persona**, stated plainly:
-  1. Invoke the prompt file by its slash-style name to load that role, or
-  2. Paste the persona body directly into the conversation.
+Escape any literal triple double quote before embedding the body. Parse every TOML file
+after writing it.
 
-**Mandatory honesty note in `AGENTS.md`.** Include an explicit statement that
-**auto-delegation is a Claude Code feature** and that **in Codex the personas are invoked
-manually** — the agent does not spawn or dispatch a team on its own. Do not soften this;
-a user must not expect automatic orchestration that the runtime cannot deliver.
+## Root AGENTS.md doctrine
+
+The team section must include:
+
+- the installed roster and each role's ownership boundary;
+- a direct instruction that cross-cutting work should use the chief-of-staff as the root
+  agent or ask the current root to delegate;
+- "one specialist by default; two or three only for genuinely independent work";
+- clean delegation briefs: objective, measurable output, format, sources, ownership and
+  stopping point;
+- wait for delegated results and synthesise them into one recommendation;
+- pair a generator with a different reviewer for consequential, hard-to-reverse work;
+- explicit ownership when several agents edit code, plus a reminder not to revert others;
+- the default one-level topology: root can spawn children; children do the assigned work
+  and return a summary rather than recursively fanning out.
+
+Do not promise proactive fan-out on every task. Codex follows direct user instructions and
+applicable `AGENTS.md`/skill instructions; parallel agents cost more and write-heavy work
+can conflict.
+
+## Project versus global scope
+
+- Project team: `.codex/agents/*.toml` and project `AGENTS.md`.
+- Personal team: `~/.codex/agents/*.toml`; still document project-specific routing in the
+  project's `AGENTS.md` rather than placing business facts in a global file.
+
+If both scopes exist, show the target plan and ask which one is canonical before writing.
 
 ## Placeholders
 
-Fill placeholders **exactly as in the Claude Code path** — same tokens, same source
-values. Nothing about Codex changes how placeholders resolve.
+Resolve the same tokens as the Claude renderer:
 
-- `{{WORKSPACE_CONTEXT}}` — inject into **every** persona prompt file and into `AGENTS.md`:
-  the user's house style (language variant, emoji policy, deliverable versioning),
-  workspace/filing notes, and standing rules. Never hardcode a house style; it comes only
-  from this token.
-- `{{LEADS_LIST}}`, `{{SPECIALISTS_LIST}}` — render into the `AGENTS.md` roster.
-- Division-lead tokens (`{{LEAD_NAME}}`, `{{LEAD_SLUG}}`, `{{DOMAIN}}`, `{{WHAT_IT_IS}}`,
-  `{{OWNS}}`, `{{DOES_NOT_OWN}}`, `{{KEY_FACTS}}`, `{{HANDOFFS}}`, `{{LEAD_COLOR}}`) — fill
-  per lead. `{{LEAD_COLOR}}` has no rendering effect in Codex (there is no agent colour
-  swatch); carry it only if a persona body references it, otherwise drop it.
-- `{{DEFAULT_STACK}}` (architect), `{{FILING_MAP}}` (ops-steward),
-  `{{INTEGRATION_SETUP}}` (comms agents), `{{ROSTER_TABLE}}` (the `AGENTS.md` roster) —
-  same substitutions as the Claude Code build.
+- `{{WORKSPACE_CONTEXT}}` in every persona;
+- `{{LEADS_LIST}}` and `{{SPECIALISTS_LIST}}` in the orchestrator;
+- all division-lead tokens;
+- `{{DEFAULT_STACK}}`, `{{FILING_MAP}}`, `{{INTEGRATION_SETUP}}` and
+  `{{ROSTER_TABLE}}` where used.
 
-## Integration-dependent personas
+Grep every output file for `{{` after rendering; a surviving token is a bug.
 
-Comms and other integration-dependent personas carry an `{{INTEGRATION_SETUP}}` note.
-Render it unchanged: the persona describes its capability generically and is instructed to
-**say plainly when its integration is not wired** rather than fabricate a result. Codex
-does not change this contract — if the underlying integration is absent, the persona
-states so.
+## Verification
 
-## Output summary
+1. Confirm the Codex version and that custom agents are available.
+2. Parse all TOML files.
+3. Confirm every roster entry maps to a file and every file has the three required fields.
+4. Start a fresh Codex session in the target workspace and ask it to list or spawn one
+   installed agent. Treat config generation and live runtime discovery as separate checks.
+5. Report the exact directories written and the safe update command/workflow.
 
-| Target | Where it goes | Frontmatter? |
-|---|---|---|
-| Each persona prompt | `~/.codex/prompts/<role>.md` | No — plain prompt body |
-| Team / roster / doctrine | `AGENTS.md` (workspace root) | No — plain Markdown |
+## Legacy fallback
 
-Keep the Codex output lean and declarative, matching the voice of the source personas.
-The win is reproducing the crew's *thinking* in a runtime that cannot orchestrate — so be
-faithful to the doctrine and honest about the mechanism.
+Only when the installed Codex release does not support `.codex/agents/*.toml`, render the
+persona bodies as plain Markdown under `.codex/prompts/` or `~/.codex/prompts/` and state
+that those roles are manually invoked. Do not select this fallback merely because prompt
+files already exist; offer migration to native agents through `update-crew`.

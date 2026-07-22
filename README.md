@@ -21,7 +21,8 @@ One team shape, instantiated to fit anyone:
                  (any lead pulls in any specialist)
    architect · code-auditor · program-manager · problem-solver
    presentation-writer · voice-scriptwriter · growth-marketer
-   product-designer · ops-steward                              ← 9 specialists
+   product-designer · ops-steward · content-engine
+   web-builder · video-editor · skool-writer-and-publish     ← 13 specialists
    inbox-reader · email-writer · notes-archivist · memory-harvester  ← 4 opt-in comms
 ```
 
@@ -56,6 +57,29 @@ You need [Claude Code](https://claude.com/claude-code). Then it's about two minu
    project (`.claude/agents/`) or globally (`~/.claude/agents/`).
 5. **Restart once more**, then invoke `@chief-of-staff` for anything cross-cutting.
 
+## Update an existing crew
+
+If you installed an earlier version, you do not need to reinstall your team or lose its
+customisation:
+
+```text
+/plugin marketplace update skyremote
+/plugin update chief-of-staff-kit@skyremote
+/reload-plugins
+/chief-of-staff-kit:update-crew
+```
+
+The updater inventories the agents already present, previews the exact changes, preserves
+your divisions and workspace rules, and only writes after you approve the plan. Version
+0.2 adds the content-engine, web-builder, video-editor and skool-writer-and-publish
+templates, native Codex custom agents, and an advisor adoption runbook.
+
+To configure Anthropic's advisor primitive after updating, run:
+
+```text
+/chief-of-staff-kit:advisor
+```
+
 ### Manual install (no marketplace)
 
 ```bash
@@ -67,11 +91,12 @@ Then ask Claude to **install the crew**.
 
 ## Codex
 
-The same personas render for [Codex](https://github.com/openai/codex) too: each
-agent becomes an invokable prompt under `~/.codex/prompts/`, plus a root `AGENTS.md`
-that documents the team and the routing doctrine. Be aware of one honest limitation —
-Codex has no auto-orchestrating subagent system, so in Codex you invoke the personas
-manually; the content ports, the automatic delegation does not.
+The same personas render as native Codex custom agents under `.codex/agents/` or
+`~/.codex/agents/`, plus a root `AGENTS.md` that requests delegation for genuinely
+independent work. Current Codex releases can spawn these agents in the desktop app, CLI
+and IDE; the default depth remains one level, which keeps the chief-of-staff pattern
+predictable. The installer can still emit legacy prompt files when it detects an older
+Codex release.
 
 ## How it works
 
@@ -81,6 +106,8 @@ manually; the content ports, the automatic delegation does not.
    integration agents to opt into, your house style, and where to install.
 3. **Renders** — fills the templates, injects your house style into every agent,
    regenerates the orchestrator's roster, and writes a team `README`.
+4. **Updates safely** — on later runs, inventories the installed roster and preserves
+   customised facts while bringing the operating doctrine and available roles forward.
 
 Everything is plain Markdown. There's no build step — the "rendering" is the
 installer model following [`skills/install-crew/SKILL.md`](skills/install-crew/SKILL.md).
@@ -93,6 +120,8 @@ skills/install-crew/
   SKILL.md             the installer (interview → render → write)
   templates/           the canonical agent personas (generic, placeholder-driven)
   references/          how to render for Claude Code and Codex
+skills/update-crew/    in-place updater for existing installations
+skills/advisor/        advisor adoption and verification runbook
 assets/                README art
 ```
 

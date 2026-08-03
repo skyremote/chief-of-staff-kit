@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <filter id="paper" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" seed="12" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="grey"/>
+      <feComponentTransfer in="grey"><feFuncA type="table" tableValues="0 0.05"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+    <filter id="wobble" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="2.7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <marker id="arrow-purple" markerWidth="12" markerHeight="12" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10" fill="none" stroke="#a23bbf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10" fill="none" stroke="#2c67d8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .hand { font-family: "Marker Felt", "Comic Sans MS", cursive; font-weight: 600; }
+      .mono { font-family: "SFMono-Regular", Menlo, Consolas, monospace; }
+      .ink { fill: #202124; }
+      .muted { fill: #8f949d; }
+      .blue { fill: #2c67d8; }
+      .purple { fill: #a23bbf; }
+      .green { fill: #15956f; }
+      .orange { fill: #d76522; }
+      .sketch { fill: white; stroke-linecap: round; stroke-linejoin: round; filter: url(#wobble); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#fafbfc"/>
+  <rect width="1600" height="900" fill="#fffef9" opacity="0.36" filter="url(#paper)"/>
+
+  <text x="48" y="68" class="hand ink" font-size="38">TRY IT · DRAG THE RELEASE CREW</text>
+  <text x="50" y="110" class="hand muted" font-size="24">move each owned agent into its isolated public worktree</text>
+
+  <!-- draggable crew tray -->
+  <path d="M45 205 Q150 196 270 204 Q280 355 269 632 Q153 641 45 630 Q38 420 45 205Z"
+        class="sketch" stroke="#9ba0a8" stroke-width="3" stroke-dasharray="8 8"/>
+  <text x="65" y="190" class="hand muted" font-size="22">DRAG FROM HERE</text>
+
+  <g class="hand" font-size="21" text-anchor="middle">
+    <path d="M65 235 Q155 226 247 234 Q252 269 245 303 Q154 309 66 302 Q59 269 65 235Z" fill="#e8edff" stroke="#2c67d8" stroke-width="4" filter="url(#wobble)"/>
+    <text x="155" y="273" class="ink">CHIEF OF STAFF</text>
+    <path d="M65 323 Q155 315 247 324 Q252 358 245 392 Q154 399 66 391 Q59 356 65 323Z" fill="#fff0e6" stroke="#d76522" stroke-width="4" filter="url(#wobble)"/>
+    <text x="155" y="361" class="ink">CONTENT ENGINE</text>
+    <path d="M65 411 Q155 404 247 412 Q252 446 245 480 Q154 487 66 479 Q59 445 65 411Z" fill="#f3eaff" stroke="#a23bbf" stroke-width="4" filter="url(#wobble)"/>
+    <text x="155" y="449" class="ink">WEB BUILDER</text>
+    <path d="M65 499 Q155 490 247 500 Q252 534 245 568 Q154 575 66 567 Q59 532 65 499Z" fill="#e7f7f0" stroke="#15956f" stroke-width="4" filter="url(#wobble)"/>
+    <text x="155" y="537" class="ink">VIDEO EDITOR</text>
+    <path d="M65 587 Q155 578 247 588 Q252 622 245 656 Q154 663 66 655 Q59 620 65 587Z" fill="#fff0e6" stroke="#d76522" stroke-width="4" filter="url(#wobble)"/>
+    <text x="155" y="625" class="ink">SKOOL PUBLISHER</text>
+  </g>
+
+  <!-- private source repository -->
+  <path d="M360 205 Q535 194 704 205 Q714 430 703 668 Q535 678 361 668 Q349 430 360 205Z"
+        class="sketch" stroke="#222" stroke-width="5"/>
+  <text x="387" y="242" class="mono ink" font-size="25">private-aios/</text>
+  <text x="387" y="275" class="hand green" font-size="20">main · private · clean</text>
+
+  <g class="mono ink" font-size="22">
+    <path d="M390 306 Q532 300 676 307 L677 365 Q533 371 391 365Z" class="sketch" stroke="#9da2aa" stroke-width="3"/>
+    <text x="416" y="343">.claude/agents/</text>
+    <path d="M390 382 Q532 376 676 383 L677 441 Q533 447 391 441Z" class="sketch" stroke="#9da2aa" stroke-width="3"/>
+    <text x="416" y="419">skills/</text>
+    <path d="M390 458 Q532 452 676 459 L677 517 Q533 523 391 517Z" class="sketch" stroke="#9da2aa" stroke-width="3"/>
+    <text x="416" y="495">brand-context/</text>
+    <path d="M390 534 Q532 528 676 535 L677 593 Q533 599 391 593Z" class="sketch" stroke="#d76522" stroke-width="3" stroke-dasharray="6 7"/>
+    <text x="416" y="571">client-memory/</text>
+    <path d="M390 610 Q532 604 676 611 L677 650 Q533 656 391 650Z" class="sketch" stroke="#d76522" stroke-width="3" stroke-dasharray="6 7"/>
+    <text x="416" y="639">.env</text>
+  </g>
+  <text x="448" y="692" class="hand orange" font-size="20">never crosses the public boundary</text>
+
+  <!-- curved hand-drawn movement arrows -->
+  <path d="M274 445 C309 430 320 430 350 448" fill="none" stroke="#2c67d8" stroke-width="5" marker-end="url(#arrow-blue)" filter="url(#wobble)"/>
+  <path d="M712 445 C755 420 770 420 812 445" fill="none" stroke="#a23bbf" stroke-width="5" marker-end="url(#arrow-purple)" filter="url(#wobble)"/>
+
+  <!-- public release boundary and isolated worktree -->
+  <path d="M810 190 Q1165 176 1545 194 Q1558 430 1544 690 Q1180 705 812 688 Q796 435 810 190Z"
+        fill="none" stroke="#a23bbf" stroke-width="5" stroke-dasharray="12 11" filter="url(#wobble)"/>
+  <text x="842" y="225" class="hand purple" font-size="25">PUBLIC RELEASE ZONE</text>
+
+  <path d="M850 260 Q1055 249 1244 262 Q1254 450 1242 637 Q1050 649 852 637 Q839 450 850 260Z"
+        class="sketch" stroke="#2c67d8" stroke-width="5"/>
+  <text x="881" y="303" class="mono ink" font-size="24">../chief-of-staff-kit/</text>
+  <path d="M877 317 Q1035 308 1208 318" fill="none" stroke="#2c67d8" stroke-width="3" filter="url(#wobble)"/>
+  <text x="882" y="347" class="hand blue" font-size="19">isolated copy · own branch</text>
+
+  <g class="mono ink" font-size="20">
+    <path d="M880 372 Q1048 366 1214 373 L1216 422 Q1047 428 881 422Z" class="sketch" stroke="#15956f" stroke-width="3"/>
+    <text x="908" y="405">agents/</text>
+    <path d="M880 438 Q1048 432 1214 439 L1216 488 Q1047 494 881 488Z" class="sketch" stroke="#15956f" stroke-width="3"/>
+    <text x="908" y="471">skills/install-crew/</text>
+    <path d="M880 504 Q1048 498 1214 505 L1216 554 Q1047 560 881 554Z" class="sketch" stroke="#15956f" stroke-width="3"/>
+    <text x="908" y="537">README.md</text>
+    <path d="M880 570 Q1048 564 1214 571 L1216 620 Q1047 626 881 620Z" fill="#fff7ef" stroke="#d76522" stroke-width="3" stroke-dasharray="5 7" filter="url(#wobble)"/>
+    <text x="908" y="603">.env + memory NOT COPIED</text>
+  </g>
+
+  <path d="M1265 418 C1320 390 1345 390 1377 419" fill="none" stroke="#a23bbf" stroke-width="5" marker-end="url(#arrow-purple)" filter="url(#wobble)"/>
+  <path d="M1382 341 Q1457 332 1522 344 Q1530 430 1522 524 Q1451 534 1382 523 Q1371 430 1382 341Z"
+        fill="#f4ebff" stroke="#a23bbf" stroke-width="4" filter="url(#wobble)"/>
+  <text x="1452" y="391" class="hand ink" font-size="24" text-anchor="middle">GITHUB</text>
+  <text x="1452" y="425" class="hand purple" font-size="18" text-anchor="middle">LIVE REPO</text>
+  <text x="1452" y="458" class="mono ink" font-size="13" text-anchor="middle">skyremote/</text>
+  <text x="1452" y="480" class="mono ink" font-size="13" text-anchor="middle">chief-of-staff-kit</text>
+
+  <path d="M985 738 C1090 773 1260 772 1382 728" fill="none" stroke="#15956f" stroke-width="4" marker-end="url(#arrow-blue)" filter="url(#wobble)"/>
+  <text x="880" y="754" class="hand green" font-size="23">review → merge → publish</text>
+
+  <text x="800" y="842" class="hand green" font-size="30" text-anchor="middle">isolated public kit created · private source cannot be overwritten</text>
+</svg>

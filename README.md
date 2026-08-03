@@ -9,6 +9,14 @@ interview. No two installs look the same.
 
 ---
 
+## Explore the live system
+
+[Open the live, read-only BluPlai whiteboard](https://app.bluplai.com/public/whiteboards/wb_iac1hMzCa86DlucaCa-tlY-4dRO0zPGglJbkGYKh1Bk)
+to explore the proof-of-use map, release portfolio and public/private packaging
+workflow. It needs no BluPlai account, and changes to the board appear there live.
+
+---
+
 ## What you get
 
 One team shape, instantiated to fit anyone:

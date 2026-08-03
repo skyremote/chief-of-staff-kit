@@ -11,9 +11,9 @@ interview. No two installs look the same.
 
 ## Explore the live system
 
-[Open the live, read-only BluPlai whiteboard](https://app.bluplai.com/public/whiteboards/wb_iac1hMzCa86DlucaCa-tlY-4dRO0zPGglJbkGYKh1Bk)
-to explore the proof-of-use map, release portfolio and public/private packaging
-workflow. It needs no BluPlai account, and changes to the board appear there live.
+[Open the live, read-only BluPlai whiteboard](https://app.bluplai.com/public/whiteboards/wb_haSCnp3ySzExZDzSiJeIhpqh41P89AAGQj83QvplK1o)
+to explore the native, editable release workflow from the private AIOS to the public
+kit. It needs no BluPlai account, and changes to the board appear there live.
 
 ---
 

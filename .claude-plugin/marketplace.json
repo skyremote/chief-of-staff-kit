@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "A customisable team of AI agents for Claude Code and Codex.",
-    "version": "0.2.1"
+    "version": "0.2.2"
   },
   "plugins": [
     {

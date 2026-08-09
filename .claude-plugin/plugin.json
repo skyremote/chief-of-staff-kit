@@ -1,6 +1,6 @@
 {
   "name": "chief-of-staff-kit",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Install or update a customised chief-of-staff agent team for Claude Code and Codex, with native orchestration, advisor adoption and content production specialists.",
   "author": {
     "name": "skyremote",

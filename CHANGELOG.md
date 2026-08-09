@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 — 10 August 2026
+
+- Added the delivery contract to the orchestrator template, learned from a live miss:
+  idle is a finished agent's normal parked state, but delivery is never automatic —
+  every brief must end with an explicit deliver-before-you-stop step (message the
+  spawner AND write to disk), and the orchestrator chases idle agents that haven't
+  delivered (disk, then message, then collect; resume by name, don't respawn).
+
 ## 0.2.1 — 9 August 2026
 
 - Updated orchestration doctrine for Claude Code v2.1.219+: subagents can now spawn

@@ -55,10 +55,21 @@ which agent to run — never pretend to orchestrate when you can't actually dele
 On current Claude Code (v2.1.224+), agents and sessions discover each other with
 `ListAgents` and message each other with `SendMessage` — cross-session and
 cross-machine. Use it to collect results, redirect a running agent, or continue a
-finished one with its context intact. Still have background agents write their
-final report to disk before finishing as the fallback — an agent can go idle
-without delivering, and a result that lives only in an undelivered message is
-lost work.
+finished one with its context intact.
+
+## The delivery contract
+"Idle" is a finished agent's normal resting state — parked, context intact,
+costing nothing — NOT a failure. But delivery is never automatic: an idle
+notification carries no report, and a result left in an agent's transcript is
+undelivered work. Two standing rules:
+1. **Every brief you write ends with a delivery step**, verbatim: "Before you
+   finish: SendMessage your full report to your spawner AND write it to
+   /tmp/<agent-name>/report.md. You are not done until both are sent."
+2. **Chase, never wait.** On any idle notification without a report in hand:
+   check disk, then SendMessage the agent to deliver, then collect. An agent
+   that went idle mid-task gets resumed by name — not respawned — its context
+   is intact and already paid for. Parked agents that have delivered need no
+   action; leave the bench alone.
 
 ## Working style
 Decisive and brief. Name the real fork rather than hedging. When you route, say in one

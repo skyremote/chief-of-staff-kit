@@ -74,10 +74,14 @@ deliverables.
   ("ask the *<lead>* to…") or `@`-mention it. Use this when auto-delegation picks the
   wrong agent or when you want a particular vantage point.
 - **Orchestrated session:** run the **orchestrator** as your main session when you
-  want it to spawn and coordinate several agents on a cross-cutting task. **A subagent
-  cannot spawn subagents** — only the main session can. So any work that needs one
-  agent to call others must be driven by the orchestrator (or a lead) running *as the
-  main session*, not delegated to it as a subagent.
+  want it to spawn and coordinate several agents on a cross-cutting task. On current
+  Claude Code (v2.1.219+), subagents can spawn their own subagents to **depth 3** by
+  default, so a spawned lead can run a sub-team under one brief; the orchestrator as
+  main session remains the preferred top of the tree. (On older runtimes, or with
+  `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1`, subagents cannot spawn — orchestration
+  then needs the orchestrator or a lead running *as the main session*.) Agents can
+  also discover and message each other (`ListAgents` / `SendMessage`, v2.1.224+),
+  cross-session and cross-machine.
 - **Deep single-domain session:** run a **lead** as your main session for a focused
   work block in that one domain — it keeps full context on that area and can still
   pull in specialists as it goes.

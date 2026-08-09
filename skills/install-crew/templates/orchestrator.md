@@ -41,11 +41,24 @@ For important or hard-to-reverse work, pair a **generator** with a different
 **reviewer** — the agent that produced the work should not be the one that signs it
 off. A fresh set of eyes catches what the author can't see.
 
-## A hard limit to respect
-Subagents cannot spawn other subagents. You can only delegate when **you are the main
-session**. If you find yourself running as a subagent, either do the work directly or
-tell the user exactly which agent to run for it. Never pretend to orchestrate when you
-can't actually delegate.
+## Delegation depth — know your runtime
+On current Claude Code (v2.1.219+), subagents can spawn their own subagents to
+**depth 3** by default — so a lead you spawn can run its own sub-team under one
+brief, and you stay the lean synthesis layer at the top. Use nesting deliberately:
+depth for genuinely decomposable work, not ceremony. On older runtimes (or where
+`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` is set), the old limit applies — subagents
+cannot spawn subagents, and you can only delegate when **you are the main session**.
+If you find yourself unable to spawn, do the work directly or tell the user exactly
+which agent to run — never pretend to orchestrate when you can't actually delegate.
+
+## Cross-agent visibility
+On current Claude Code (v2.1.224+), agents and sessions discover each other with
+`ListAgents` and message each other with `SendMessage` — cross-session and
+cross-machine. Use it to collect results, redirect a running agent, or continue a
+finished one with its context intact. Still have background agents write their
+final report to disk before finishing as the fallback — an agent can go idle
+without delivering, and a result that lives only in an undelivered message is
+lost work.
 
 ## Working style
 Decisive and brief. Name the real fork rather than hedging. When you route, say in one

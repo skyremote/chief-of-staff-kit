@@ -9,6 +9,7 @@
   "homepage": "https://github.com/skyremote/chief-of-staff-kit",
   "repository": "https://github.com/skyremote/chief-of-staff-kit",
   "license": "MIT",
+  "hooks": "./hooks/hooks.json",
   "keywords": [
     "agents",
     "subagents",

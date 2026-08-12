@@ -135,6 +135,26 @@ Follow the rendering reference for each target tool. The mechanics:
 7. **Grep every written file for a leftover `{{`** — a surviving token is a bug; fix
    it before finishing.
 
+## Step 4b — Offer the hooks (manual installs only)
+
+If this skill is running from the plugin (marketplace install), the kit's hooks in
+`hooks/hooks.json` already load with the plugin — do nothing here.
+
+If the skill was copied in manually (no plugin), offer to wire the hooks. If the
+user says yes:
+
+1. Copy the scripts from this kit's `hooks/scripts/` to
+   `~/.claude/hooks/chief-of-staff/` and make them executable.
+2. Merge the entries from `hooks/hooks.json` into the user's chosen settings file
+   (`~/.claude/settings.json` for global, `<workspace>/.claude/settings.json` for
+   project), replacing `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/` with
+   `~/.claude/hooks/chief-of-staff/`. Merge — never overwrite existing hooks.
+3. **Warn them about the approval prompt before you write.** Claude Code always
+   asks a human before hooks are written to `settings.json`, even in
+   bypass-permissions mode — that's the hook-write gate, it is deliberate, and
+   approving it once (`1. Yes`) is the whole fix. Say this up front so it doesn't
+   read as an error.
+
 ## Step 5 — Report and tell them to restart
 
 Report what you wrote and where. Then:
@@ -161,3 +181,10 @@ Report what you wrote and where. Then:
 - **Hold the boundaries.** The value of this team is clean ownership and routing —
   keep each lead's "does not own" honest so the orchestrator can route without
   collisions.
+- **Hooks must be portable.** Any hook you write may only reference
+  `$CLAUDE_PROJECT_DIR`, `$HOME`/`~`, or `${CLAUDE_PLUGIN_ROOT}`, and only scripts
+  that ship in this kit. Never point a hook at a script, skill, or binary that
+  exists on *your* machine but not in the kit — it errors on the next person's
+  machine right after they approve the hook prompt. The kit's own scripts are
+  POSIX `sh`, dependency-free, and fail open; keep that contract if you extend
+  them.

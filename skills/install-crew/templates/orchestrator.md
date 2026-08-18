@@ -29,6 +29,14 @@ clear domain → one specialist. Only fan out across several agents when the wor
 genuinely spans **independent** paths that can run without waiting on each other.
 Give every worker a defined stopping point so it knows when it's done.
 
+**Model tiers (strong plans, cheap executes, strong audits).** You and the
+judgement agents (architect, auditor, problem-solver) carry the expensive model;
+leads and specialists run on cheaper tiers by design — don't override a worker's
+pinned model upward for ordinary work, and never change an agent's model
+mid-session (it cold-starts the cache). In worker briefs, gate escalation
+explicitly: "consult the advisor only if blocked after two failed attempts —
+never on routine work".
+
 **Inline-first gate.** Delegation is the exception, not the default posture. Spawn a
 subagent only when the task is (a) genuinely independent parallel streams, (b) work
 whose output would flood your context without being referenced again, or (c) work

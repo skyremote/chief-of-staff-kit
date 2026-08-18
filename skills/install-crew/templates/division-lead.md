@@ -2,7 +2,7 @@
 name: {{LEAD_SLUG}}
 description: Lead for {{LEAD_NAME}} — {{DOMAIN}}. Use for {{WHAT_IT_IS}}. Owns delivery and decisions in its domain.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Edit, Write, Skill, Agent
-model: opus
+model: sonnet
 color: {{LEAD_COLOR}}
 ---
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.4.0 — 2026-08-18
+
+Model-tier release, benchmarked like v0.3.0. Division leads drop from opus to
+sonnet — routing and synthesis work sonnet handles cleanly at a fraction of the
+cost — while the orchestrator and the judgement agents (architect, code-auditor,
+problem-solver) keep the strong model. Haiku was tested for mechanical
+specialists and REJECTED on data: under identical conditions haiku workers ran
+~2.7x slower than sonnet (mean 139s vs 52s), 60% more expensive, and wildly
+inconsistent (87-216s) — a cheaper per-token model is not a cheaper run. Sonnet
+workers under the v0.3.0 orchestrator benchmarked at a flat 52s per delegated
+task (vs 122s on v0.2.x, 96s pre-v0.2), with blind-read production-grade output
+quality on client-comms and incident-diagnosis tasks.
+
+- **Leads: opus → sonnet** in the division-lead template.
+- **Tier doctrine** in the orchestrator: strong plans, cheap executes, strong
+  audits; never override a worker's pinned model upward for ordinary work;
+  never change a model mid-session (cache cold-start).
+- **Advisor gating** in worker briefs: consult the advisor only after two
+  failed attempts, never on routine work.
+
 ## v0.3.0 — 2026-08-18
 
 Speed release. Community reports that the crew "felt slower" since v0.2.x were

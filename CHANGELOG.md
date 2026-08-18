@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.0 — 2026-08-18
+
+Speed release. Community reports that the crew "felt slower" since v0.2.x were
+benchmarked and confirmed: the mandatory delivery ceremony put a ~2-minute latency
+floor under every delegation (old fast path ~50s; v0.2.x never under ~105s on the
+same task, at equal cost), and depth-first delegation stacks cold starts and
+short-lived caches.
+
+- **Inline-first gate**: the orchestrator now does work itself unless the task
+  genuinely needs parallel streams, context isolation, or tool isolation.
+- **Flat by default**: delegation is one level deep; depth-3 nesting becomes a
+  deliberate escape hatch with an explicit "one brief, one lead, one report"
+  pattern for when it IS warranted; fan-outs beyond ~5 agents route to workflows.
+- **Delivery contract scoped**: full report/progress/SendMessage ceremony applies
+  to background and long runs only; short foreground spawns deliver by their
+  returned message.
+- **Install first-drive**: install-crew now ends with a guided first session
+  (identity check, inline answer, first delegation) and writes a QUICKSTART.md.
+
 ## 0.2.2 — 10 August 2026
 
 - Added the delivery contract to the orchestrator template, learned from a live miss:

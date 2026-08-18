@@ -146,6 +146,26 @@ Report what you wrote and where. Then:
 - If you mirrored project files to global (non-git workspace), remind them to re-sync
   after edits.
 
+## Step 6 — First drive (do not skip)
+
+An installed crew a user doesn't know how to drive is a failed install. After they
+restart, walk them through three checks in their new session, in order:
+
+1. **Identity check:** have them ask "who am I speaking to?" — the orchestrator
+   should answer in character (and, if a sign-off was configured, close with it).
+   If not, the agent didn't load: re-check the install directory and restart.
+2. **Inline answer:** one trivial question from their real work — it should be
+   answered directly, with no delegation. This teaches them the inline-first gate.
+3. **First delegation:** one small real task that clearly belongs to a single lead
+   ("ask the <lead> to…"). Point out the routing line and the synthesised answer.
+
+Then leave them a `QUICKSTART.md` next to the team README covering: when to talk to
+the orchestrator vs a lead directly; that delegation is the exception (inline-first);
+how to ask for a nested sub-team when work is genuinely big; the sign-off-stops =
+context-getting-full canary and compacting around 40%; and where the roster README
+lives. Close by telling them the update path: pull the kit's latest and re-run
+`update-crew`.
+
 ---
 
 ## Guardrails

@@ -74,10 +74,14 @@ deliverables.
   ("ask the *<lead>* to…") or `@`-mention it. Use this when auto-delegation picks the
   wrong agent or when you want a particular vantage point.
 - **Orchestrated session:** run the **orchestrator** as your main session when you
-  want it to spawn and coordinate several agents on a cross-cutting task. On current
-  Claude Code (v2.1.219+), subagents can spawn their own subagents to **depth 3** by
-  default, so a spawned lead can run a sub-team under one brief; the orchestrator as
-  main session remains the preferred top of the tree. (On older runtimes, or with
+  want it to spawn and coordinate several agents on a cross-cutting task. Delegation
+  runs **flat by default** — one level, the orchestrator as the top of the tree.
+  Nesting to depth 3 (Claude Code v2.1.219+) is an escape hatch for work that
+  genuinely decomposes, not a working style: each level stacks a cold start and a
+  short-lived cache, so it is slower on ordinary tasks. To use it, ask the
+  orchestrator explicitly — "give the <lead> this whole workstream and let it run
+  its own sub-team" — and it will hand the lead one brief and collect one
+  synthesised report. (On older runtimes, or with
   `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1`, subagents cannot spawn — orchestration
   then needs the orchestrator or a lead running *as the main session*.) Agents can
   also discover and message each other (`ListAgents` / `SendMessage`, v2.1.224+),

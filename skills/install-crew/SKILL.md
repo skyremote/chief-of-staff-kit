@@ -165,8 +165,11 @@ default main-loop agent (Claude Code only):
      fi
    }
    ```
-3. **Headless caveat** — tell the user that unattended `claude -p` scripts should
-   pass `--agent chief-of-staff` explicitly rather than rely on the setting.
+3. **Headless caveat** — the `agent` key DOES apply to headless `claude -p` runs
+   (verified empirically 2026-08-18). Warn the user: any unattended script that
+   should NOT run as the orchestrator (crons, render jobs, pipelines) must pin its
+   own agent explicitly with `--agent <name>`, or it will silently boot the
+   orchestrator — its persona, tools, and model — for every scheduled run.
 
 ## Step 5 — Report and tell them to restart
 

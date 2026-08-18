@@ -102,6 +102,9 @@ multiple-choice where you can. Keep it tight.
 7. **Install scope** → **project** (`<workspace>/.claude/agents/`) or **global**
    (`~/.claude/agents/`). See the non-git caveat in the rendering reference and pick
    accordingly.
+8. **Front door** (recommended: yes) → should the orchestrator become the DEFAULT
+   session, so a bare `claude` (and the desktop app) boots straight into it with no
+   flags? If yes, you'll set the `agent` key in Step 4.5.
 
 ## Step 3 — Show the plan, then confirm
 
@@ -135,6 +138,36 @@ Follow the rendering reference for each target tool. The mechanics:
 7. **Grep every written file for a leftover `{{`** — a surviving token is a bug; fix
    it before finishing.
 
+## Step 4.5 — Make it the front door (if opted in)
+
+If the user said yes to the front-door question, wire the orchestrator in as the
+default main-loop agent (Claude Code only):
+
+1. **Set the `agent` key** in the chosen scope's settings — `~/.claude/settings.json`
+   for global installs, `<workspace>/.claude/settings.json` for project installs:
+   ```json
+   { "agent": "chief-of-staff" }
+   ```
+   Merge into the existing file — never overwrite other settings. This swaps the
+   main loop to the orchestrator (its system prompt, tools, and model) for bare
+   `claude` and the desktop app, and `--agent <name>` still overrides it
+   per-invocation when the user wants a different seat.
+2. **VS Code extension caveat** — the extension has no agent setting of its own. If
+   the embedded session doesn't pick up the key, the integrated terminal is the
+   route. Offer this shell function (NOT a bare alias — that breaks `claude update`
+   and `claude --version`):
+   ```bash
+   claude() {
+     if [[ $# -eq 0 ]] || [[ "$1" == -* ]]; then
+       command claude --agent chief-of-staff "$@"
+     else
+       command claude "$@"
+     fi
+   }
+   ```
+3. **Headless caveat** — tell the user that unattended `claude -p` scripts should
+   pass `--agent chief-of-staff` explicitly rather than rely on the setting.
+
 ## Step 5 — Report and tell them to restart
 
 Report what you wrote and where. Then:
@@ -153,7 +186,9 @@ restart, walk them through three checks in their new session, in order:
 
 1. **Identity check:** have them ask "who am I speaking to?" — the orchestrator
    should answer in character (and, if a sign-off was configured, close with it).
-   If not, the agent didn't load: re-check the install directory and restart.
+   If not, the agent didn't load: re-check the install directory and restart. If
+   they opted into the front door (Step 4.5), a BARE `claude` must pass this check
+   with no flags.
 2. **Inline answer:** one trivial question from their real work — it should be
    answered directly, with no delegation. This teaches them the inline-first gate.
 3. **First delegation:** one small real task that clearly belongs to a single lead

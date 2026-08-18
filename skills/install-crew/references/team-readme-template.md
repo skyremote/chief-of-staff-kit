@@ -73,6 +73,9 @@ deliverables.
 - **Name or @-mention an agent:** to force a specific agent, ask for it by name
   ("ask the *<lead>* to…") or `@`-mention it. Use this when auto-delegation picks the
   wrong agent or when you want a particular vantage point.
+- **Front door (if enabled):** the `agent` key in settings makes a bare `claude`
+  (and the desktop app) boot the orchestrator automatically; `--agent <name>`
+  overrides per-invocation. Headless scripts should pass `--agent` explicitly.
 - **Orchestrated session:** run the **orchestrator** as your main session when you
   want it to spawn and coordinate several agents on a cross-cutting task. Delegation
   runs **flat by default** — one level, the orchestrator as the top of the tree.

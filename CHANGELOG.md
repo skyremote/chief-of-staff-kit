@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.1 — 2026-08-18
+
+Front-door release. The installer now offers to make the orchestrator the
+DEFAULT session: a new interview question plus Step 4.5 set the `agent` key in
+settings so a bare `claude` (and the desktop app) boots straight into the
+chief of staff — no flags, no remembering. Includes the VS Code integrated-
+terminal shell function (the extension has no agent setting of its own) and
+the headless caveat (`claude -p` scripts should pass `--agent` explicitly).
+First-drive check updated: with the front door enabled, a bare `claude` must
+pass the identity check.
+
 ## v0.4.0 — 2026-08-18
 
 Model-tier release, benchmarked like v0.3.0. Division leads drop from opus to

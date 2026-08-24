@@ -106,10 +106,13 @@ Field rules:
     when they're absent (see §4, integration note).
   - Omitting `tools` entirely inherits the full default toolset. Prefer being
     explicit.
-- **`model`** — `haiku`, `sonnet`, or `opus`, matched to the role's difficulty:
-  cheap/fast (`haiku`) for mechanical scouts, `sonnet` for most leads and
-  specialists, `opus` for the orchestrator and hard reasoning roles (architect,
-  problem solver). When in doubt use `sonnet`.
+- **`model`** — `sonnet` or `opus`, matched to the role's difficulty: `sonnet`
+  for leads, specialists, and mechanical roles; `opus` for the orchestrator and
+  hard reasoning roles (architect, problem solver). Do NOT use `haiku`: it was
+  benchmarked for mechanical specialists in v0.4.0 and rejected — ~2.7x slower
+  than sonnet and 60% more expensive per run (total run cost from the extra
+  turns, despite the cheaper per-token rate), with wildly inconsistent timings.
+  When in doubt use `sonnet`.
 - **`color`** — a display colour for the agent in the UI. Division-lead templates
   carry a `{{LEAD_COLOR}}` token; fill it from the interview (one of the standard
   Claude Code colours: `red`, `blue`, `green`, `yellow`, `purple`, `orange`,

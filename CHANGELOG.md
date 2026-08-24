@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.4.2 — 2026-08-24
+
+Distribution-fix release, prompted by a field report from an early adopter who
+diffed a long-stale install against main. The content of v0.3.0–v0.4.1 had
+shipped to main, but the plugin and marketplace manifests were never bumped past
+0.2.2 and no tags or GitHub releases were cut — so marketplace update detection
+told existing installs there was nothing new, and people quietly ran old
+orchestrators believing they were current. This release fixes the pipe and the
+report's other findings:
+
+- **Manifests bumped**: `plugin.json` and `marketplace.json` now carry the real
+  version, so marketplace installs are finally told to update. Retro-tags and
+  GitHub releases added for v0.2.1 through v0.4.1.
+- **Release checklist** added (`RELEASING.md`) so a content release can never
+  again ship without the manifest bump, tag and release — the root cause here.
+- **Front-door scheduled-run scan**: before offering the front door, the
+  installer now actively scans for scheduled `claude -p` invocations (crontab,
+  launchd plists, workspace scripts) and shows what it finds — turning the
+  documented headless caveat into a check that catches the cron you forgot
+  you had.
+- **Hand-copied installs** are now a recognised install mode: `update-crew`
+  documents the update path for crews copied from the templates by hand, with
+  no plugin installed behind them.
+- **"60% more expensive" clarified to "per run"** in the v0.4.0 haiku numbers —
+  it always meant total run cost from the extra turns, not per-token rate.
+- **Stale haiku guidance fixed** in the Claude Code rendering reference, which
+  still recommended haiku for mechanical scouts in contradiction of the v0.4.0
+  benchmark rejection.
+
 ## v0.4.1 — 2026-08-18
 
 Front-door release. The installer now offers to make the orchestrator the
@@ -18,8 +47,9 @@ sonnet — routing and synthesis work sonnet handles cleanly at a fraction of th
 cost — while the orchestrator and the judgement agents (architect, code-auditor,
 problem-solver) keep the strong model. Haiku was tested for mechanical
 specialists and REJECTED on data: under identical conditions haiku workers ran
-~2.7x slower than sonnet (mean 139s vs 52s), 60% more expensive, and wildly
-inconsistent (87-216s) — a cheaper per-token model is not a cheaper run. Sonnet
+~2.7x slower than sonnet (mean 139s vs 52s), 60% more expensive per run (total
+run cost from the extra turns — haiku's per-token rate is still cheaper), and
+wildly inconsistent (87-216s) — a cheaper per-token model is not a cheaper run. Sonnet
 workers under the v0.3.0 orchestrator benchmarked at a flat 52s per delegated
 task (vs 122s on v0.2.x, 96s pre-v0.2), with blind-read production-grade output
 quality on client-comms and incident-diagnosis tasks.

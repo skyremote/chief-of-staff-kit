@@ -24,6 +24,23 @@ Inspect, without writing:
 Determine which copy is canonical. Do not create a second parallel roster when one already
 exists. If both project and global teams exist, report both and ask which scope to update.
 
+### Hand-copied installs (no kit behind the crew)
+
+A crew can exist with NO plugin or marketplace install behind it — the user copied the
+templates into `~/.claude/agents/` (or a project) by hand and personalised them. This is a
+real install mode, not an error. The discovery above still finds the agent files; what's
+missing is a local copy of the kit to update FROM. In that case:
+
+1. Tell the user plainly: there is no installed kit, so "refresh the plugin" doesn't apply
+   to them.
+2. Offer the two routes: install the plugin/marketplace properly (recommended — they get
+   update detection from now on), or fetch the templates directly
+   (`git clone https://github.com/skyremote/chief-of-staff-kit` to a temp dir, or
+   `git pull` an existing clone).
+3. Then run the rest of this workflow unchanged against those current templates. Their
+   customisations are preserved exactly as for a plugin install — the semantic inventory
+   in step 2 does not care how the files got there.
+
 ## 2. Build a semantic inventory
 
 For every installed persona, capture:

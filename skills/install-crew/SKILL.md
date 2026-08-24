@@ -106,6 +106,20 @@ multiple-choice where you can. Keep it tight.
    session, so a bare `claude` (and the desktop app) boots straight into it with no
    flags? If yes, you'll set the `agent` key in Step 4.5.
 
+   **Before asking this question, scan for scheduled headless runs** — the `agent`
+   key applies to `claude -p` too, so an unattended job would silently start
+   booting as the orchestrator. Check and SHOW the user what you find:
+   ```bash
+   crontab -l 2>/dev/null | grep -n "claude"
+   grep -rln "claude -p\|claude --print" ~/Library/LaunchAgents /Library/LaunchAgents 2>/dev/null
+   grep -rln "claude -p\|claude --print" <workspace> --include="*.sh" 2>/dev/null
+   ```
+   (On Linux, check systemd user timers and `/etc/cron*` as well.) Any hit that
+   should NOT run as the orchestrator must pin its own agent with
+   `--agent <name>` — offer to add the flag for them before enabling the front
+   door. Most people with a cron do not remember they have a cron; the scan is
+   the point, not the caveat.
+
 ## Step 3 — Show the plan, then confirm
 
 Before writing anything, show the user:
@@ -170,6 +184,10 @@ default main-loop agent (Claude Code only):
    should NOT run as the orchestrator (crons, render jobs, pipelines) must pin its
    own agent explicitly with `--agent <name>`, or it will silently boot the
    orchestrator — its persona, tools, and model — for every scheduled run.
+   Revisit the scheduled-run scan from the Step 2 front-door question: every hit
+   found there must be pinned (or the user must explicitly accept the change)
+   BEFORE you set the key. Nothing errors when this goes wrong — the job just
+   quietly becomes a different job — so the scan is the only warning they get.
 
 ## Step 5 — Report and tell them to restart
 
@@ -202,7 +220,10 @@ the orchestrator vs a lead directly; that delegation is the exception (inline-fi
 how to ask for a nested sub-team when work is genuinely big; the sign-off-stops =
 context-getting-full canary and compacting around 40%; and where the roster README
 lives. Close by telling them the update path: pull the kit's latest and re-run
-`update-crew`.
+`update-crew`. If they installed by hand-copying the templates rather than via the
+marketplace/plugin, the update path is different — clone or pull the kit's repo and
+run `update-crew` from there against their installed agents (see "Hand-copied
+installs" in the update-crew skill).
 
 ---
 

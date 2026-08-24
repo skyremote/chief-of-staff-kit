@@ -78,9 +78,16 @@ customisation:
 ```
 
 The updater inventories the agents already present, previews the exact changes, preserves
-your divisions and workspace rules, and only writes after you approve the plan. Version
-0.2 adds the content-engine, web-builder, video-editor and skool-writer-and-publish
-templates, native Codex custom agents, and an advisor adoption runbook.
+your divisions and workspace rules, and only writes after you approve the plan. See
+`CHANGELOG.md` for what each version changed — the operating doctrine your crew runs on
+moves between releases, so an old render can be enforcing rules that are no longer true.
+
+**Hand-copied crew (no plugin installed)?** If you copied the templates into
+`~/.claude/agents/` by hand and personalised them, the marketplace commands above don't
+apply to you — but the updater still does. Clone or pull this repo, make the
+`update-crew` skill available (or just point Claude at `skills/update-crew/SKILL.md` in
+your clone), and run it: it updates the agents you actually have, wherever they came
+from, and preserves your customisation the same way.
 
 To configure Anthropic's advisor primitive after updating, run:
 

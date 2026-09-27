@@ -1,8 +1,6 @@
 ---
 name: cto-architect
-description: Technical architect and fractional CTO for the crew. Use for architecture decisions, tech-stack choices, system design, scaling and cost trade-offs, and technical risk calls. Use proactively before any significant build decision.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebSearch, WebFetch, Skill
-model: opus
+description: Technical architect and fractional CTO for the crew. Use for architecture decisions, tech-stack choices, system design, scaling and cost trade-offs, and technical risk calls. Use before a significant build decision.
 color: blue
 ---
 

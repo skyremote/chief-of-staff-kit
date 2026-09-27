@@ -54,6 +54,10 @@ before you fill it.
 Ask which the user runs (offer both):
 
 - **Claude Code** → render native subagents (`references/rendering-claude-code.md`).
+  The same local agent files are available in terminal sessions and local Code
+  sessions in the Claude desktop app. Check the Code tab, the selected workspace
+  and install scope. Chat and Cowork use account-synced extensions; local
+  `~/.claude/agents/` files alone do not prove those surfaces can see the crew.
 - **Codex** → render native custom-agent TOML files + a root `AGENTS.md`
   (`references/rendering-codex.md`). Current Codex releases can spawn project or global
   custom agents. Detect the installed Codex version before rendering and use the legacy
@@ -102,9 +106,13 @@ multiple-choice where you can. Keep it tight.
 7. **Install scope** → **project** (`<workspace>/.claude/agents/`) or **global**
    (`~/.claude/agents/`). See the non-git caveat in the rendering reference and pick
    accordingly.
-8. **Front door** (recommended: yes) → should the orchestrator become the DEFAULT
-   session, so a bare `claude` (and the desktop app) boots straight into it with no
-   flags? If yes, you'll set the `agent` key in Step 4.5.
+8. **Front door** (optional, default no) → should the orchestrator become the
+   DEFAULT local Claude Code session, so a bare `claude` or a new local Code-tab
+   session starts with it? Offer it as a real choice: in the kit's tests
+   a plain session did everyday work as well as the orchestrator, and
+   `claude --agent chief-of-staff` starts the orchestrator whenever they want it. It
+   suits people who hand work to the crew most days. If yes, you'll set the `agent`
+   key in Step 4.5.
 
    **Before asking this question, scan for scheduled headless runs** — the `agent`
    key applies to `claude -p` too, so an unattended job would silently start
@@ -163,9 +171,10 @@ default main-loop agent (Claude Code only):
    { "agent": "chief-of-staff" }
    ```
    Merge into the existing file — never overwrite other settings. This swaps the
-   main loop to the orchestrator (its system prompt, tools, and model) for bare
-   `claude` and the desktop app, and `--agent <name>` still overrides it
-   per-invocation when the user wants a different seat.
+   main loop to the orchestrator for bare `claude` and new local Code-tab
+   sessions in the desktop app. `--agent <name>` overrides it in the CLI.
+   Verify the desktop session separately; a settings file alone is not proof
+   that the selected app surface loaded it.
 2. **VS Code extension caveat** — the extension has no agent setting of its own. If
    the embedded session doesn't pick up the key, the integrated terminal is the
    route. Offer this shell function (NOT a bare alias — that breaks `claude update`
@@ -183,7 +192,7 @@ default main-loop agent (Claude Code only):
    (verified empirically 2026-08-18). Warn the user: any unattended script that
    should NOT run as the orchestrator (crons, render jobs, pipelines) must pin its
    own agent explicitly with `--agent <name>`, or it will silently boot the
-   orchestrator — its persona, tools, and model — for every scheduled run.
+   orchestrator and its routing instructions for every scheduled run.
    Revisit the scheduled-run scan from the Step 2 front-door question: every hit
    found there must be pinned (or the user must explicitly accept the change)
    BEFORE you set the key. Nothing errors when this goes wrong — the job just
@@ -193,10 +202,12 @@ default main-loop agent (Claude Code only):
 
 Report what you wrote and where. Then:
 
-- **Claude Code:** agents load at session start, not mid-session — tell the user to
-  start a new session, then invoke `@chief-of-staff` for anything cross-cutting or
-  call any agent by `name`.
-- **Codex:** point them at the new prompt files and `AGENTS.md`.
+- **Claude Code:** start a new terminal or local desktop Code session in the
+  selected workspace. Ask for the chief of staff by name for cross-cutting work.
+  If the front door is enabled, verify a bare CLI and a new Code-tab session.
+- **Codex:** point them at the generated `AGENTS.md` and custom-agent TOML
+  files. The root session follows `AGENTS.md`; ask it to use a named specialist.
+  Do not claim a `codex --agent` launch path without checking that build's CLI.
 - If you mirrored project files to global (non-git workspace), remind them to re-sync
   after edits.
 
@@ -205,20 +216,23 @@ Report what you wrote and where. Then:
 An installed crew a user doesn't know how to drive is a failed install. After they
 restart, walk them through three checks in their new session, in order:
 
-1. **Identity check:** have them ask "who am I speaking to?" — the orchestrator
-   should answer in character (and, if a sign-off was configured, close with it).
-   If not, the agent didn't load: re-check the install directory and restart. If
-   they opted into the front door (Step 4.5), a BARE `claude` must pass this check
-   with no flags.
-2. **Inline answer:** one trivial question from their real work — it should be
-   answered directly, with no delegation. This teaches them the inline-first gate.
-3. **First delegation:** one small real task that clearly belongs to a single lead
-   ("ask the <lead> to…"). Point out the routing line and the synthesised answer.
+1. **Discovery check:** in a fresh Claude session, ask for a named lead or
+   specialist and confirm it actually runs. In the CLI, use
+   `claude --agent chief-of-staff` to check the orchestrator identity. If they
+   opted into the front door (Step 4.5), a bare `claude` and a new local
+   desktop Code session should also start with that identity. For Codex,
+   check that its root session follows the team section of `AGENTS.md` and
+   can spawn one named custom agent.
+2. **Inline answer:** in an orchestrated session, ask one trivial question from
+   their real work. It should be answered directly, with no delegation.
+3. **First delegation:** in that session, ask one small real task that clearly
+   belongs to a single lead ("ask the <lead> to…"). Point out that naming the
+   lead sends the work there and the result comes back as one answer.
 
 Then leave them a `QUICKSTART.md` next to the team README covering: when to talk to
-the orchestrator vs a lead directly; that delegation is the exception (inline-first);
-how to ask for a nested sub-team when work is genuinely big; the sign-off-stops =
-context-getting-full canary and compacting around 40%; and where the roster README
+the orchestrator vs a lead directly; that the orchestrator does most work itself and
+delegates when they name an agent or the work splits into parallel streams; that very
+large jobs spanning many agents run best as a workflow; and where the roster README
 lives. Close by telling them the update path: pull the kit's latest and re-run
 `update-crew`. If they installed by hand-copying the templates rather than via the
 marketplace/plugin, the update path is different — clone or pull the kit's repo and
@@ -232,9 +246,9 @@ installs" in the update-crew skill).
 - **Never fabricate the user's facts.** If you don't know a division's details, ask,
   or write a clear placeholder and tell them to fill it. A confidently-wrong fact is
   worse than a gap.
-- **Keep the published descriptions clean.** Real names, companies, domains, and
-  paths belong in the persona body via `{{WORKSPACE_CONTEXT}}`, never in the
-  frontmatter `description` (that string is broadly visible).
+- **Keep descriptions clean.** A local lead description may name its division
+  for routing. Keep customer details, private facts, paths and credentials out
+  of frontmatter `description`; it is visible when the agent is discovered.
 - **Scale the crew to the user.** One division and three specialists is a perfectly
   good crew. Don't push all 18 agents on someone who needs five.
 - **Hold the boundaries.** The value of this team is clean ownership and routing —

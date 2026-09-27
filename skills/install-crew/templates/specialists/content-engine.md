@@ -1,8 +1,6 @@
 ---
 name: content-engine
 description: Research-to-published-content specialist. Turns a topic, URL, meeting, transcript, video or deck into a sourced article, useful imagery and distribution copy for an existing publishing surface.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebSearch, WebFetch, Skill
-model: sonnet
 color: orange
 ---
 

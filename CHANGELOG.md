@@ -1,5 +1,58 @@
 # Changelog
 
+## v0.5.0 — 2026-09-27
+
+This release updates the crew for current Claude Code and Codex clients. It
+combines the staged mechanism and persona changes into one member update.
+
+- **Connected tools stay available.** Removed stock `tools:` allowlists from all
+  Claude agent templates. In the test workspace the v0.4.2 chief of staff saw
+  8 tools against 25 in a plain session; an allowlist hid connected and newer
+  built-in tools. Subagents still receive only the tools their runtime permits.
+- **Model choice follows the session.** Removed stock `model:` pins. Claude Code
+  now resolves a per-invocation choice, `CLAUDE_CODE_SUBAGENT_MODEL`, then the
+  main session's model. Across four delegated tasks, the old Sonnet-pinned lead
+  averaged 97 seconds against 55 seconds without the pin, saving $0.09 in
+  total (8%) while pinned. Both arms passed the same 5/5 hidden tests. Members
+  can still deliberately pin a model; the updater preserves custom pins.
+- **The chief of staff works directly on short requests.** It delegates when a
+  named role is requested, independent streams justify parallel work, the task
+  would consume too much context, or another agent holds relevant access. It
+  briefs once, gives each agent clear ownership, and synthesises their results.
+  Division leads also work directly when their domain does not need a specialist.
+  A lead may use a specialist for a distinct part of its brief where the client
+  supports nested agents; otherwise the root coordinates that hand-off.
+- **Less process talk.** Removed the routing line in every reply, the old
+  delegation ceremony, cache and cold-start arguments, and stale nesting and
+  delivery rules. In the sampled everyday tasks, v0.4.2 narrated its routing
+  in 5 of 9 answers; the new version did so in 0 of 27. Everyday requests
+  averaged 26 seconds with the new chief of staff and 26 seconds in a plain
+  session. Deterministic and hidden checks were level; these tests do not
+  establish a quality gain over a plain session. Explicitly requested
+  delegation worked in 6 of 6 runs.
+- **The front door is a choice at installation.** A new install asks whether
+  the chief of staff should be the default local Claude Code session, with no
+  as the initial selection. The updater leaves an existing `agent` setting
+  untouched. Scheduled `claude -p` jobs still need their own agent choice when
+  the default is enabled.
+- **Read-only claims are precise.** Claude's auditor and memory harvester block
+  `Edit`, `Write` and `NotebookEdit`; Bash and connected tools may still write,
+  so this is a behavioural boundary. Codex read-only reviewers use its native
+  read-only sandbox.
+- **Native client guidance.** The installer and team README now cover Claude's
+  local desktop Code tab, as well as the terminal. Codex uses custom-agent TOML
+  in the app, CLI and IDE with the chief-of-staff doctrine in root `AGENTS.md`;
+  it does not depend on a `codex --agent` CLI flag. Chat, Cowork and cloud
+  sessions have separate extension loading and need their own checks.
+- **Existing crews need the updater.** Refreshing the plugin alone does not
+  rewrite copied agent files. `update-crew` previews changes, backs up files,
+  preserves business facts and user-authored instructions, removes stock
+  allowlists and model pins, and replaces contradictory v0.4.x doctrine.
+
+The Jev preference and averaged-score numbers from the staging notes were
+excluded: their questions did not pass the method check. The release evidence
+above rests on timings, tool counts, deterministic tests and answer text.
+
 ## v0.4.2 — 2026-08-24
 
 Distribution-fix release, prompted by a field report from an early adopter who

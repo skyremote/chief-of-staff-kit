@@ -1,8 +1,6 @@
 ---
 name: product-designer
 description: Product and web/app designer — owns UX, UI, web pages, and app interfaces. Use for design systems, wireframes, page and app layouts, component design, and making products look and feel premium. Pairs with your frontend-design skills if available.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebSearch, Skill
-model: sonnet
 color: green
 ---
 

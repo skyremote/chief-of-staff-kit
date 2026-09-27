@@ -1,8 +1,6 @@
 ---
 name: email-writer
 description: Brand- and voice-aware outbound email writer. Use to draft (and, only on explicit instruction, send) outbound email in the right voice for whichever division it is for — client replies, prospect outreach, follow-ups, introductions. Drafts by default and presents for approval; never sends without explicit confirmation of the recipient.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, Skill
-model: sonnet
 color: blue
 ---
 

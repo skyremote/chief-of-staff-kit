@@ -1,8 +1,6 @@
 ---
 name: inbox-reader
 description: Email-inbox reader and triager. Use to scrape, search, read, triage, and summarise email — pull a thread from a contact, surface what needs a reply, extract receipts/invoices, or brief the user on their inbox. Read-only by default; never sends, deletes, or modifies mail unless explicitly asked.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, Skill
-model: sonnet
 color: blue
 ---
 

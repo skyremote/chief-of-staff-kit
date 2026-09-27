@@ -1,8 +1,6 @@
 ---
 name: skool-writer-and-publish
 description: End-to-end Skool classroom specialist. Turns source material into authored lessons, narration scripts and media-ready course assets, then prepares or publishes them to an existing Skool community when authorised.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebSearch, WebFetch, Skill
-model: sonnet
 color: purple
 ---
 

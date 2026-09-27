@@ -1,8 +1,6 @@
 ---
 name: growth-marketer
 description: Growth and marketing specialist — positioning, messaging, launches, content, social, SEO, and go-to-market. Use for campaigns, narrative, and turning a product into a story people act on. Pairs with whatever content, SEO, and social skills are installed.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebSearch, WebFetch, Skill
-model: sonnet
 color: green
 ---
 

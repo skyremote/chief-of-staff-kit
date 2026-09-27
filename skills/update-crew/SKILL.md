@@ -79,10 +79,33 @@ files that will be touched. Then:
 2. Preserve the installed division facts and `WORKSPACE_CONTEXT` verbatim unless the user
    asked to change them.
 3. Preserve integration instructions and any clearly user-authored section.
-4. Regenerate the orchestrator roster from the files that will actually be installed.
-5. For current Codex, render native custom-agent TOML files according to
+4. Bring Claude Code frontmatter forward (v0.5.0):
+   - Remove the `tools:` line: an allowlist hides every MCP connector and every newer
+     built-in tool from that agent. If the list names anything beyond the kit's stock
+     set (Read, Grep, Glob, Bash, Edit, Write, WebSearch, WebFetch, Skill, Agent,
+     TodoWrite), such as MCP tools the user added, show it in the plan and ask first.
+   - Give read-only roles (`code-auditor`, `memory-harvester`, and any custom agent whose
+     persona says it never modifies files) `disallowedTools: Edit, Write, NotebookEdit`
+     in its place.
+   - Remove stock model pins so Claude Code honours a per-invocation choice,
+     `CLAUDE_CODE_SUBAGENT_MODEL`, or the main session's model in that order.
+     The v0.4.2 stock used `opus` for the orchestrator, architect, auditor and
+     problem-solver, and `sonnet` for everything else. A pin that differs from
+     its role's stock value may be intentional: keep it and mention it in the
+     plan. If intent is unclear, show the exact file before changing it.
+5. Replace the orchestrator's v0.4.x doctrine rather than merging it (v0.5.0). The
+   sections "How you delegate", "Alone vs council", "Delegation depth", "Cross-agent
+   visibility", "The delivery contract" and "Working style", and the model-tier and
+   inline-first paragraphs, are superseded by the template's "When to delegate" and
+   "How you answer"; merging old and new leaves the orchestrator with contradictory
+   instructions. Carry any user-authored lines from those sections across and list
+   them in the plan. If the settings `agent` key makes the orchestrator the front
+   door, leave it in place and tell the user it is now optional (remove the key to
+   turn it off).
+6. Regenerate the orchestrator roster from the files that will actually be installed.
+7. For current Codex, render native custom-agent TOML files according to
    `install-crew/references/rendering-codex.md`.
-6. Grep generated output for unresolved `{{...}}` tokens and malformed YAML/TOML.
+8. Grep generated output for unresolved `{{...}}` tokens and malformed YAML/TOML.
 
 Do not silently replace a native Codex roster with legacy prompt files.
 
@@ -94,5 +117,10 @@ Do not silently replace a native Codex roster with legacy prompt files.
 - Show a concise before/after roster and the backup path.
 - Tell the user to run `/reload-plugins` or start a new session if the active client has not
   picked up agent changes.
+- For each requested surface, check discovery in a new session: Claude Code
+  terminal, local Claude desktop Code tab, and/or Codex app, CLI and IDE.
+  File presence does not prove the client loaded the role. Report any surface
+  whose runtime check was blocked separately. Cowork and cloud sessions use
+  account-synced extensions rather than the local agent folder.
 
 Never delete the backup automatically.

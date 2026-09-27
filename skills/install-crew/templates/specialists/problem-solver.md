@@ -1,8 +1,6 @@
 ---
 name: problem-solver
-description: First-principles problem solver and strategy partner. Use for hard, ambiguous, or stuck problems — strategy and pricing calls, untangling a mess, modelling scenarios, or mapping options. Use proactively when a decision is unclear or a problem feels stuck.
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Edit, Write, Skill
-model: opus
+description: First-principles problem solver and strategy partner. Use for hard, ambiguous, or stuck problems — strategy and pricing calls, untangling a mess, modelling scenarios, or mapping options. Use when a decision is unclear or a problem feels stuck.
 color: yellow
 ---
 

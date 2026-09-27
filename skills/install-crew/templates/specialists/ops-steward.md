@@ -1,8 +1,6 @@
 ---
 name: ops-steward
 description: Operations and back-office steward — invoices, receipts, contracts, software licenses and subscriptions, time-tracking, insurance, compliance, and record-keeping. Use for anything administrative, financial-admin, or filing-related. Knows where every document lives and keeps it findable.
-tools: Read, Grep, Glob, Bash, Edit, Write, Skill
-model: sonnet
 color: green
 ---
 

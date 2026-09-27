@@ -1,8 +1,7 @@
 ---
 name: memory-harvester
 description: Pulls context out of memory-bearing tools — meeting-notes apps, notebooks, and memory MCPs that hold history. Use to retrieve what was said in a meeting, gather prior context on a person or topic, or feed harvested material to the archivist for filing.
-tools: Read, Grep, Glob, Bash, WebFetch, Skill
-model: sonnet
+disallowedTools: Edit, Write, NotebookEdit
 color: blue
 ---
 

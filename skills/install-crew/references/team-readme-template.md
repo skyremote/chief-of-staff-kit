@@ -25,9 +25,11 @@ you move or add an agent file, keep it in this same directory so it is discovere
                   ───── shared specialists ─────         ← cross-cutting roles
 ```
 
-The shape is the same regardless of how many leads or specialists you installed:
-**you talk to the orchestrator, the orchestrator routes to a lead, and any lead can
-pull in any specialist.** Leads own a domain; specialists own a craft.
+The root session does most ordinary work itself. It brings in a lead or
+specialist when you ask for one or when a separate agent adds clear value.
+Leads own a domain; specialists own a craft. A lead can ask a specialist to
+handle a distinct part of its brief when its client permits nested agents;
+otherwise the root coordinates that hand-off.
 
 ## The roster
 
@@ -41,9 +43,9 @@ for the setup it needs.
 
 ## When they work alone vs together
 
-**Default: one agent, alone.** Most work is a single clear domain — let one
-specialist own it. It is faster, cheaper, and keeps context clean. Reach for more
-agents only when the work genuinely needs more than one vantage point.
+**Default: the current session works directly.** Use one specialist for a task
+that needs that role's context or access. Run independent work together only
+when doing so improves the result or saves time.
 
 **Sequential (a chain):** when one agent's output feeds the next. A lead supplies the
 facts → a specialist turns them into the deliverable → a reviewer checks it. Or an
@@ -59,39 +61,26 @@ orchestrator reconcile their views into one recommendation. **Do not** run counc
 simple or objective questions — it wastes effort and can make the answer worse by
 manufacturing disagreement where there is none.
 
-**Generator + reviewer — the highest-value pairing.** One agent produces the work
-(code, deck, plan), a **different** agent checks it. Never let a single agent be the
-only judge of its own output on anything that matters. This one pattern catches more
-real errors than any council, and it is cheap. Make it the default for important
-deliverables.
+**Generator + reviewer.** One agent produces an important deliverable (code,
+deck, plan), and a different agent checks it when an independent review adds
+value. Keep the files and review scope explicit. Routine checks stay with the
+agent doing the work.
 
 ## How to run them
 
-- **Chat (delegation):** describe the task and ask the root session to use the crew —
-  the runtime delegates to the right agent based on each agent's `description`. This is the
-  usual path; you rarely need to name an agent explicitly.
-- **Name or @-mention an agent:** to force a specific agent, ask for it by name
-  ("ask the *<lead>* to…") or `@`-mention it. Use this when auto-delegation picks the
-  wrong agent or when you want a particular vantage point.
-- **Front door (if enabled):** the `agent` key in settings makes a bare `claude`
-  (and the desktop app) boot the orchestrator automatically; `--agent <name>`
-  overrides per-invocation. Headless scripts should pass `--agent` explicitly.
-- **Orchestrated session:** run the **orchestrator** as your main session when you
-  want it to spawn and coordinate several agents on a cross-cutting task. Delegation
-  runs **flat by default** — one level, the orchestrator as the top of the tree.
-  Nesting to depth 3 (Claude Code v2.1.219+) is an escape hatch for work that
-  genuinely decomposes, not a working style: each level stacks a cold start and a
-  short-lived cache, so it is slower on ordinary tasks. To use it, ask the
-  orchestrator explicitly — "give the <lead> this whole workstream and let it run
-  its own sub-team" — and it will hand the lead one brief and collect one
-  synthesised report. (On older runtimes, or with
-  `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1`, subagents cannot spawn — orchestration
-  then needs the orchestrator or a lead running *as the main session*.) Agents can
-  also discover and message each other (`ListAgents` / `SendMessage`, v2.1.224+),
-  cross-session and cross-machine.
-- **Deep single-domain session:** run a **lead** as your main session for a focused
-  work block in that one domain — it keeps full context on that area and can still
-  pull in specialists as it goes.
+- **Claude Code CLI:** run `claude --agent chief-of-staff` for an orchestrated
+  session. An optional `agent` setting makes that the default for bare `claude`.
+  Pin unattended `claude -p` jobs to the agent they require.
+- **Claude desktop Code tab:** start a new local session in the workspace where
+  the crew was installed. It reads the same local agent files and settings as
+  the CLI. Ask for a named lead or specialist; verify one real delegation in
+  the Tasks pane. Chat, Cowork and cloud sessions have separate extension
+  loading and need their own installation check.
+- **Codex app, CLI or IDE:** the root reads the team section of `AGENTS.md`.
+  Ask it to use a named specialist when you want that role. Custom agents are
+  configured in `.codex/agents/` or `~/.codex/agents/`; `codex --agent` is not
+  the entry point on current builds. Check one actual spawned agent in the
+  client you use.
 
 ## Adding and editing agents
 

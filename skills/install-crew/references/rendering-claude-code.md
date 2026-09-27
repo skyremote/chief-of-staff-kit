@@ -75,8 +75,6 @@ templates already carry the body; you fill the frontmatter fields.
 ---
 name: division-lead-acme
 description: Owns everything for the Acme division — strategy, deliverables, and routing within that domain. Invoke when work concerns Acme, its customers, or its roadmap.
-tools: Read, Write, Edit, Bash, Grep, Glob
-model: sonnet
 color: blue
 ---
 
@@ -93,26 +91,31 @@ Field rules:
 - **`description`** — third person, action-oriented, **trigger-friendly**. This is
   the single most important field: Claude reads it to decide *when* to invoke the
   agent. Lead with what it owns, then "Invoke when …" / "Use for …" cues. Keep it
-  one to three sentences. **No real-world names, companies, domains, or paths** —
-  if the interview gave you specifics, fold them into the persona body via
-  `{{WORKSPACE_CONTEXT}}`, not into the published description.
-- **`tools`** — comma-separated list of the tools the agent may use. Grant the
-  minimum the role needs:
-  - Read-only analysts (auditor, reviewer): `Read, Grep, Glob`.
-  - Builders (architect, writers, ops): add `Write, Edit, Bash`.
-  - The orchestrator typically needs `Read, Grep, Glob, Task` so it can delegate.
-  - Comms agents that depend on an integration also list that integration's tools
-    (for example MCP tool names) — but the persona must still degrade gracefully
-    when they're absent (see §4, integration note).
-  - Omitting `tools` entirely inherits the full default toolset. Prefer being
-    explicit.
-- **`model`** — `sonnet` or `opus`, matched to the role's difficulty: `sonnet`
-  for leads, specialists, and mechanical roles; `opus` for the orchestrator and
-  hard reasoning roles (architect, problem solver). Do NOT use `haiku`: it was
-  benchmarked for mechanical specialists in v0.4.0 and rejected — ~2.7x slower
-  than sonnet and 60% more expensive per run (total run cost from the extra
-  turns, despite the cheaper per-token rate), with wildly inconsistent timings.
-  When in doubt use `sonnet`.
+  one to three sentences. A local lead description may name its division so
+  Claude can route to it. Keep customer details, private facts, paths and
+  credentials in the persona body or outside agent files; never put them in
+  the description.
+  Keep interpolated text on one line and use a YAML folded scalar (`>-`) or
+  quote and escape it: business descriptions may contain colons or quotes.
+  Parse the final YAML frontmatter before reporting the install complete.
+- **`tools`** — leave it out. The agent inherits the tools available to
+  subagents in that session, including connected tools. Claude Code still filters
+  some tools by subagent depth and whether the agent runs in the background.
+  An allowlist also drops anything it does not name, so a stale one can remove
+  connected tools and newly added built-ins.
+  - The auditor and memory harvester use `disallowedTools: Edit, Write,
+    NotebookEdit`. This keeps search, Bash and connected tools available. It is a
+    behaviour rule, not a hard read-only sandbox: Bash can write files and a
+    connected service may expose write actions. If an installation requires a
+    strict read-only boundary, configure tool permissions for that installation.
+  - Use a `tools` allowlist only for a deliberate sandbox, and then name the MCP
+    tools the role needs (`mcp__<server>__*`). Comms personas must still degrade
+    gracefully when their integration is absent (see §4, integration note).
+- **`model`** — leave it out. Claude Code then honours a model chosen for the
+  invocation, the member's `CLAUDE_CODE_SUBAGENT_MODEL` setting, or the main
+  session's model, in that order. `model: inherit` skips the environment setting.
+  A fixed model overrides both that setting and the main session's model unless
+  the invocation chooses another. Offer a pin only when the member asks for one.
 - **`color`** — a display colour for the agent in the UI. Division-lead templates
   carry a `{{LEAD_COLOR}}` token; fill it from the interview (one of the standard
   Claude Code colours: `red`, `blue`, `green`, `yellow`, `purple`, `orange`,
@@ -240,10 +243,10 @@ Generate `{{ROSTER_TABLE}}` from the installed files — one row per agent:
 ```markdown
 | Agent | Role | Model | Invoke when |
 |---|---|---|---|
-| chief-of-staff | Orchestrator | opus | Anything cross-cutting; routes to the right lead/specialist. |
-| division-lead-acme | Lead | sonnet | Work concerns the Acme domain. |
-| architect | Specialist | sonnet | System design or a tech decision is needed. |
-| code-auditor | Specialist | sonnet | Reviewing a change before it ships. |
+| chief-of-staff | Orchestrator | session default | Anything cross-cutting; routes to the right lead/specialist. |
+| division-lead-acme | Lead | session default | Work concerns the Acme domain. |
+| architect | Specialist | session default | System design or a tech decision is needed. |
+| code-auditor | Specialist | session default | Reviewing a change before it ships. |
 ```
 
 The README should also note: the install scope chosen, the non-git caveat if it
@@ -273,7 +276,7 @@ copies will be stale.
 - [ ] Every template copied; every `{{TOKEN}}` filled (grep for leftover `{{`).
 - [ ] `{{WORKSPACE_CONTEXT}}` injected identically into **every** agent.
 - [ ] Frontmatter valid on each: kebab-case `name`, trigger-friendly `description`,
-      minimal `tools`, right `model`, a `color`.
+      no stock `tools` allowlist, no stock `model` pin, a `color`.
 - [ ] No real-world names, brands, domains, emails, or personal paths in any
       shipped file.
 - [ ] Orchestrator `{{LEADS_LIST}}` / `{{SPECIALISTS_LIST}}` regenerated from the

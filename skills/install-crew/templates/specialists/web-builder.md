@@ -1,8 +1,6 @@
 ---
 name: web-builder
 description: Full-stack marketing-site specialist. Researches, writes, designs, builds, tests and ships polished websites and landing pages with a real shareable URL.
-tools: Read, Grep, Glob, Bash, Edit, Write, WebSearch, WebFetch, Skill
-model: sonnet
 color: green
 ---
 

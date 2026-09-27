@@ -1,8 +1,6 @@
 ---
 name: presentation-writer
-description: Deck and presentation builder. Use to create or rework presentations — pitch, offer, programme, investor, or client decks. Picks whichever deck skill is installed and builds polished, on-brand slides. Use proactively whenever a deck or slides are needed.
-tools: Read, Grep, Glob, Bash, Edit, Write, Skill
-model: sonnet
+description: Deck and presentation builder. Use to create or rework presentations — pitch, offer, programme, investor, or client decks. Picks whichever deck skill is installed and builds polished, on-brand slides. Use when a deck or slides are needed.
 color: orange
 ---
 

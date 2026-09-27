@@ -1,8 +1,6 @@
 ---
 name: voice-scriptwriter
 description: Scriptwriter for voice and narration — voiceovers, video VO, demo narration, and audio scripts. Use when content needs to be spoken, not just read aloud well. Pairs with a TTS/voice skill and any video pipeline when the script feeds a video.
-tools: Read, Grep, Glob, Edit, Write, Skill
-model: sonnet
 color: orange
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: video-editor
 description: Recorded-video specialist. Turns raw talking-head, webcam or screen recordings into a polished master and focused short-form cuts using the installed editing stack.
-model: sonnet
 color: red
 ---
 

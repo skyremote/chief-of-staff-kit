@@ -45,25 +45,38 @@ clean-brief delegation, explicit ownership boundaries, "work alone vs convene a
 council", generator-plus-reviewer pairing, and decisive synthesis instead of a menu
 of options.
 
-## Install (Claude Code)
+## Install in Claude Code
 
-You need [Claude Code](https://claude.com/claude-code). Then it's about two minutes:
+You need [Claude Code](https://claude.com/claude-code). Add the plugin in the
+client you use:
 
-1. **Add the marketplace:**
+**Terminal:**
+
+1. Add the marketplace:
    ```text
    /plugin marketplace add skyremote/chief-of-staff-kit
    ```
-2. **Install the plugin:**
+2. Install the plugin:
    ```text
    /plugin install chief-of-staff-kit@skyremote
    ```
    (Or run `/plugin`, choose **Browse marketplaces**, and install **chief-of-staff-kit**
    from the menu.)
-3. **Restart** Claude Code (start a new session) so the plugin loads.
-4. **Tell Claude:** `install the crew`. The installer interviews you (or reads your
-   existing `CLAUDE.md`), shows you a plan to approve, then writes your agents into your
-   project (`.claude/agents/`) or globally (`~/.claude/agents/`).
-5. **Restart once more**, then invoke `@chief-of-staff` for anything cross-cutting.
+**Claude desktop app:** open **Code** for a local workspace. In **Customize →
+Plugins → Add plugin → Add marketplace → Add from a repository**, enter
+`https://github.com/skyremote/chief-of-staff-kit`. Install
+**chief-of-staff-kit** from that marketplace and start a new local Code session.
+
+Then tell Claude **`install the crew`**. The installer interviews you (or reads your
+existing `CLAUDE.md`), shows you a plan to approve, then writes your agents into your
+project (`.claude/agents/`) or globally (`~/.claude/agents/`). Start another new
+session to load them. In the terminal, `claude --agent chief-of-staff` starts an
+orchestrated session. In the desktop Code tab, ask for the chief of staff or a
+named specialist and check that a real delegation appears in **Tasks**. The
+installer can also make the chief of staff the default local session if you choose.
+
+The local Code tab shares Claude Code's local configuration. Chat, Cowork and
+cloud sessions load extensions differently; check those surfaces separately.
 
 ## Update an existing crew
 
@@ -77,9 +90,12 @@ customisation:
 /chief-of-staff-kit:update-crew
 ```
 
-The updater inventories the agents already present, previews the exact changes, preserves
-your divisions and workspace rules, and only writes after you approve the plan. See
-`CHANGELOG.md` for what each version changed — the operating doctrine your crew runs on
+In the desktop app, update the plugin in **Customize → Plugins**, start a new
+local Code session, then run `update-crew` there. Updating the plugin does not
+rewrite an existing crew: the updater previews changes, backs up touched files
+and preserves your divisions and workspace rules.
+
+See `CHANGELOG.md` for what each version changed — the operating doctrine your crew runs on
 moves between releases, so an old render can be enforcing rules that are no longer true.
 
 **Hand-copied crew (no plugin installed)?** If you copied the templates into
@@ -106,12 +122,14 @@ Then ask Claude to **install the crew**.
 
 ## Codex
 
-The same personas render as native Codex custom agents under `.codex/agents/` or
-`~/.codex/agents/`, plus a root `AGENTS.md` that requests delegation for genuinely
-independent work. Current Codex releases can spawn these agents in the desktop app, CLI
-and IDE; the default depth remains one level, which keeps the chief-of-staff pattern
-predictable. The installer can still emit legacy prompt files when it detects an older
-Codex release.
+Clone this repository, open your target workspace in Codex, and ask Codex to read
+`skills/install-crew/SKILL.md` from the clone and install the crew for Codex.
+The same personas render as native custom-agent TOML files under
+`.codex/agents/` or `~/.codex/agents/`, plus a chief-of-staff section in the
+root `AGENTS.md`. The root session uses that section to coordinate the crew;
+ask it for a named agent when you want a hand-off. Current Codex releases can
+spawn these agents in the desktop app, CLI and IDE. The installer uses legacy
+prompt files only when an older Codex release lacks custom agents.
 
 ## How it works
 
@@ -124,8 +142,9 @@ Codex release.
 4. **Updates safely** — on later runs, inventories the installed roster and preserves
    customised facts while bringing the operating doctrine and available roles forward.
 
-Everything is plain Markdown. There's no build step — the "rendering" is the
-installer model following [`skills/install-crew/SKILL.md`](skills/install-crew/SKILL.md).
+The source templates and skills are Markdown. Codex custom agents are generated
+as TOML. There is no build step — the installer follows
+[`skills/install-crew/SKILL.md`](skills/install-crew/SKILL.md).
 
 ## What's in here
 

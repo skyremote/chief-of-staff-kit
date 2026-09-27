@@ -1,8 +1,6 @@
 ---
 name: notes-archivist
 description: Files notes and work outputs into the user's knowledge base(s) so they stay searchable later — meeting notes, summaries, research, session takeaways, deliverable notes. Use whenever something worth keeping has been produced and should be archived. Does NOT touch the agent's own internal learnings/memory.
-tools: Read, Grep, Glob, Bash, Edit, Write, Skill, WebFetch
-model: sonnet
 color: blue
 ---
 

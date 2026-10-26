@@ -8,6 +8,8 @@ want taken without a yes, and **ten golden tasks** tell you whether a change
 helped. A short interview fits all of it to your work. No two installs look the
 same.
 
+![chief-of-staff-kit v0.6.0: the chief of staff as one main loop, with division and craft skills it opens when needed, three helpers in a fresh window, own-context skills, hook gates and golden tasks](assets/hero.jpg)
+
 ---
 
 ## Explore the live system
@@ -191,7 +193,7 @@ specialist agents), ask the installer for it. The templates are kept unchanged
 under `skills/install-crew/templates/legacy/`, and hook gates and golden tasks
 work with either shape. Run the golden tasks against both before you settle.
 
-![The v0.5 shape: a chief-of-staff orchestrator routing to division leads, each fanning out to specialist agents](assets/hero.jpg)
+![The v0.5 shape: a chief-of-staff orchestrator routing to division leads, each fanning out to specialist agents](assets/legacy/hero-v0.5.jpg)
 
 ## What's in here
 

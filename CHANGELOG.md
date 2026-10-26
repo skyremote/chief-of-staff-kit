@@ -6,6 +6,7 @@
 one main loop that plans and does the work, with divisions and crafts as skills,
 three helpers that need their own context, hook gates on irreversible actions
 and a golden-task eval. The v0.5 agents remain available on request.
+New hero art shows the one-loop shape; the v0.5 image moves to `assets/legacy/`.
 
 Why: every agent boundary is a hand-off, and hand-offs drop decisions. In the
 author's own use the generic helpers, forks and the code reviewer did almost all

@@ -7,7 +7,7 @@ disable-model-invocation: true
 # Adopt the advisor for the crew
 
 The advisor primitive lets a working Claude model consult a stronger model inside the same
-session. It is not another subagent and does not change the one-level crew topology.
+session. It is not another subagent and does not change the crew's shape.
 
 ## Guardrails
 
@@ -29,9 +29,11 @@ session. It is not another subagent and does not change the one-level crew topol
    model available within their quota, with the main/advisor compatibility explained.
 4. Create a timestamped backup of `~/.claude/settings.json`.
 5. Parse the JSON, change only `advisorModel`, and write valid formatted JSON.
-6. Add a short **Reaching for the advisor** section only to installed high-judgement agents
-   such as the orchestrator, architect, code auditor, problem solver and web builder. Keep
-   any existing tailored version instead of duplicating it.
+6. Add a short **Reaching for the advisor** section only to high-judgement parts of the
+   crew: in the one-loop shape, the `chief-of-staff` main loop, the `code-reviewer` agent
+   and the `architecture`, `problem-solving` and `web-build` skills; in the legacy shape,
+   the orchestrator, architect, code auditor, problem solver and web builder. Keep any
+   existing tailored version instead of duplicating it.
 7. If the same crew is installed for Codex, do not add Anthropic advisor instructions to
    Codex agents; Codex uses its own reviewer/subagent mechanisms.
 

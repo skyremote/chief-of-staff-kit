@@ -1,116 +1,137 @@
 # Rendering the crew for Codex
 
-Current Codex releases support native custom agents and one-level subagent workflows in
-the desktop app, CLI and IDE. Render the crew into that mechanism. Use the legacy prompt
-fallback at the end only when the installed Codex build genuinely lacks custom agents.
+Codex gets the same one-loop shape: the root session is the main loop, divisions
+and crafts are skills, the three helpers are custom agents, and irreversible
+actions are gated by hooks. Codex differs from Claude Code in three places that
+matter here: skills have no `context: fork`, hooks have no `ask` and no
+`onFailure`, and the root session takes its doctrine from `AGENTS.md`.
 
 ## What to generate
 
-For the selected project or global scope, produce:
+| Piece | Project scope | Global scope |
+|---|---|---|
+| Main-loop doctrine | team section in `<ws>/AGENTS.md` | team section in the workspace's `AGENTS.md` (business facts stay out of global files) |
+| Division and craft skills | `<ws>/.agents/skills/<name>/SKILL.md` | `~/.agents/skills/<name>/SKILL.md` |
+| Helpers and heavy jobs | `<ws>/.codex/agents/*.toml` | `~/.codex/agents/*.toml` |
+| Hook gates | `<ws>/.codex/hooks.json` + `<ws>/.codex/hooks/*.sh` | `~/.codex/hooks.json` + `~/.codex/hooks/*.sh` |
+| Golden tasks, README, QUICKSTART | next to the agents | next to the agents |
 
-1. one TOML file per specialist and lead under `.codex/agents/` or
-   `~/.codex/agents/`; the chief-of-staff TOML is optional for explicit
-   delegation, but the root session cannot become that custom agent through a
-   `codex --agent` flag;
-2. one `AGENTS.md` at the workspace root (or a clearly delimited team section in an
-   existing file) containing the chief-of-staff operating doctrine for the root
-   session, routing and delegation rules;
-3. a team README with the installed roster and update instructions.
+Never overwrite an existing `AGENTS.md`, `hooks.json` or `config.toml`. Merge a
+clearly headed, versioned section or entry and preserve everything else. Back up
+each file first.
 
-Do not overwrite an existing `AGENTS.md`. Merge a versioned, clearly headed section and
-preserve unrelated project rules.
+## Root `AGENTS.md`: the main loop
 
-## Custom-agent TOML
+Render the body of `templates/main-loop.md` (without its frontmatter) as the
+team section, with the same tokens filled. Translate Claude-specific language:
 
-Each agent file requires `name`, `description` and `developer_instructions`:
+- "load the skill" stays: Codex picks a skill when the task matches its
+  `description`, or the user mentions it with `$<skill>` or `/skills`.
+- "own-context skills" become **custom agents** (see below), so the sentence
+  reads "heavy jobs run as the named custom agents, each with a full brief".
+- Per-call `effort` and forks are Claude Code features. Replace that line with:
+  "Ask a custom agent only when a separate context changes the result."
+- Keep the one question (helps, hurts, does not matter), the hooks paragraph,
+  the golden-tasks paragraph and "How you answer" as written.
+
+## Skills
+
+Codex reads `SKILL.md` with `name` and `description` in the frontmatter. Copy
+each division and inline craft skill folder unchanged after filling tokens, and
+drop any Claude-only keys. Optional Codex settings such as
+`policy.allow_implicit_invocation` go in a separate `agents/openai.yaml` inside
+the skill folder, not in the frontmatter.
+
+## Custom agents (TOML)
+
+Each file needs `name`, `description` and `developer_instructions`:
 
 ```toml
-name = "code-auditor"
-description = "Read-only code reviewer focused on correctness, security and missing tests."
+name = "code-reviewer"
+description = "Independent code reviewer in a fresh window. Sees only the spec and the diff."
+sandbox_mode = "read-only"
 developer_instructions = """
-You are the code auditor...
+You are an independent code reviewer...
 """
 ```
 
-Use the persona's kebab-case name as the filename. Convert the Claude template as follows:
+Render as custom agents:
 
-- map frontmatter `name` and `description` to TOML strings;
-- place the full persona body, with resolved placeholders, in
-  `developer_instructions = """..."""`;
-- omit Claude-only `tools`, `color` and `model` keys unless the user explicitly wants a
-  Codex model override;
-- give genuinely read-only reviewers `sandbox_mode = "read-only"` rather than
-  relying on a prose claim; verify the agent can still read its required sources;
-- when a model override is requested, use current Codex model IDs and
-  `model_reasoning_effort`; otherwise inherit the parent session;
-- translate "Agent tool" or Claude-specific invocation language into "spawn/delegate to
-  the named custom agent";
-- keep subagents aware that they are not alone in the workspace and must not revert other
-  agents' edits.
+- **The three helpers.** `code-reviewer` and `verifier` get
+  `sandbox_mode = "read-only"`; check they can still read what they need. If the
+  user wants a stronger reviewer, set `model_reasoning_effort = "high"` on
+  `code-reviewer`, the Codex counterpart of `effort: high`.
+- **The four heavy jobs** (`web-build`, `video-edit`, `course-publish`,
+  `content-engine`). Codex has no `context: fork`, so a separate agent is the
+  way to keep their tool output out of the main loop. This is the "call as a
+  tool" pattern: the root keeps the conversation, sends a full brief, and gets a
+  compact result back. Replace `$ARGUMENTS` in the body with "the brief you were
+  given". If the user prefers them inline, render them as plain skills instead
+  and drop the `context` key.
 
-Escape any literal triple double quote before embedding the body. Parse every TOML file
-after writing it.
+Omit `tools`, `color`, `model` and Claude's `effort` and `omitClaudeMd` keys.
+Escape any literal triple double quote in a body. Parse every TOML file after
+writing it.
 
-## Root AGENTS.md doctrine
+## Hook gates
 
-The root session is the chief of staff in Codex. The team section must include:
+Codex supports `PreToolUse` hooks in `hooks.json` (or inline `[hooks]` in
+`config.toml`), with the same JSON input shape (`tool_name`,
+`tool_input.command`, `cwd`) for shell commands, `apply_patch` and MCP tools.
 
-- the installed roster and each role's ownership boundary;
-- an instruction to handle ordinary requests directly and delegate when the
-  user names a specialist, independent parts can run in parallel, or another
-  agent has relevant access or a useful separate context;
-- how to ask for a named agent in the app, CLI or IDE;
-- a cap of two or three independent agents for a consequential review, with
-  a single owner for each file when they can edit;
-- clean delegation briefs: objective, measurable output, format, sources, ownership and
-  stopping point;
-- wait for delegated results and synthesise them into one recommendation;
-- pair a generator with a different reviewer for consequential, hard-to-reverse work;
-- explicit ownership when several agents edit code, plus a reminder not to revert others;
-- a bounded topology: the root coordinates the crew; a lead may ask a specialist
-  for a distinct part of its brief when that Codex client permits it. Otherwise
-  it returns the specialist request to the root. Do not depend on nesting for
-  completion, and keep one owner per output.
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          { "type": "command", "command": ".codex/hooks/gate-protected-push.sh deny \"main release/*\"", "timeout": 10, "statusMessage": "Checking the push gate" },
+          { "type": "command", "command": ".codex/hooks/gate-secrets-in-commit.sh deny", "timeout": 20 }
+        ]
+      },
+      {
+        "matcher": "^mcp__<mail-server>__send.*",
+        "hooks": [
+          { "type": "command", "command": ".codex/hooks/gate-confirm.sh \"sending email\" deny", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}
+```
 
-Codex follows direct user instructions and applicable `AGENTS.md`/skill
-instructions. It may delegate when that improves speed or quality; avoid
-unnecessary hand-offs and parallel edits to the same files. A root prompt in
-`AGENTS.md` is the reliable cross-client entry point, including the desktop app.
+Differences to state plainly to the user:
 
-## Project versus global scope
+- **Always `deny`.** Codex does not support `ask` yet. A gate blocks with exit 2
+  and the root asks the user in chat.
+- **No `if` field.** The matcher is a regular expression on the tool name only,
+  so the gate scripts filter the command themselves and exit 0 for anything
+  that is not theirs.
+- **Gates fail open.** Codex has no `onFailure`; a gate that errors or times out
+  is reported and the tool call continues. The docs call tool hooks "a useful
+  guardrail, not a complete enforcement boundary". For anything that must never
+  happen, also remove the credential or permission that makes it possible.
+- **Trust review.** Non-managed hooks must be reviewed with `/hooks` before they
+  run, and project hooks load only when the project `.codex/` layer is trusted.
+  Tell the user to do this in the first drive.
 
-- Project team: `.codex/agents/*.toml` and project `AGENTS.md`.
-- Personal team: `~/.codex/agents/*.toml`; still document project-specific routing in the
-  project's `AGENTS.md` rather than placing business facts in a global file.
-
-If both scopes exist, show the target plan and ask which one is canonical before writing.
-
-## Placeholders
-
-Resolve the same tokens as the Claude renderer:
-
-- `{{WORKSPACE_CONTEXT}}` in every persona;
-- `{{LEADS_LIST}}` and `{{SPECIALISTS_LIST}}` in the orchestrator;
-- all division-lead tokens;
-- `{{DEFAULT_STACK}}`, `{{FILING_MAP}}`, `{{INTEGRATION_SETUP}}` and
-  `{{ROSTER_TABLE}}` where used.
-
-Grep every output file for `{{` after rendering; a surviving token is a bug.
+Test each gate with a matching and a non-matching sample input, as in the Claude
+Code reference.
 
 ## Verification
 
-1. Confirm the Codex version and that custom agents are available.
-2. Parse all TOML files.
-3. Confirm every roster entry maps to a file and every file has the three required fields.
-4. Start a fresh Codex session in the target workspace in each client the user
-   intends to use. Ask the root to name an installed agent, then delegate a
-   small task to it. Treat config generation and live runtime discovery as
-   separate checks.
-5. Report the exact directories written and the safe update command/workflow.
+1. Confirm the Codex version supports custom agents, skills and hooks.
+2. Parse every TOML and JSON file; check every skill has `name` and `description`.
+3. Grep all output for `{{`.
+4. In a fresh session in each client the user will use: ask one division task
+   (the skill should load), ask the root to use `researcher`, and trigger one
+   gate in a scratch repository after `/hooks` review.
+5. Report the directories written and the backups taken.
 
-## Legacy fallback
+## Legacy shape and older builds
 
-Only when the installed Codex release does not support `.codex/agents/*.toml`, render the
-persona bodies as plain Markdown under `.codex/prompts/` or `~/.codex/prompts/` and state
-that those roles are manually invoked. Do not select this fallback merely because prompt
-files already exist; offer migration to native agents through `update-crew`.
+For the legacy v0.5 shape, render the agents in `templates/legacy/` as custom
+agents and the legacy orchestrator body as the `AGENTS.md` team section. Only
+when the installed Codex lacks custom agents, render personas as Markdown under
+`.codex/prompts/` and say those roles are invoked by hand.

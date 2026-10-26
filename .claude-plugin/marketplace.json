@@ -5,14 +5,14 @@
     "url": "https://github.com/skyremote"
   },
   "metadata": {
-    "description": "A customisable team of AI agents for Claude Code and Codex.",
-    "version": "0.5.0"
+    "description": "One chief of staff for Claude Code and Codex: one main loop with skills, helpers, hook gates and evals.",
+    "version": "0.6.0"
   },
   "plugins": [
     {
       "name": "chief-of-staff-kit",
       "source": "./",
-      "description": "Install or update a chief-of-staff agent team for Claude Code and Codex, including advisor adoption and content production specialists."
+      "description": "Install or update a chief of staff for Claude Code and Codex in the one-loop shape, migrate v0.5 crews, and adopt the advisor."
     }
   ]
 }

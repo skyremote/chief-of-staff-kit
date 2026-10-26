@@ -1,285 +1,302 @@
-# Rendering the crew into Claude Code subagents
+# Rendering the crew for Claude Code
 
-This reference explains how the installer turns the templates in this skill into
-working Claude Code subagents. It is the step that happens *after* the interview:
-you have the answers, now you write files to disk and tell the user how to load
-them.
-
-A Claude Code subagent is a single Markdown file with YAML frontmatter. The crew
-is just a folder of these files plus one team README. Rendering is mechanical:
-pick a scope, copy each template, fill placeholders, write the file, regenerate
-the orchestrator's roster lists, write the README, and tell the user to restart.
+How the installer turns the templates into a working one-loop crew after the
+interview: one main-loop agent, a folder of skills, three helper agents, hook
+gates in settings, a golden-task file and a team README.
 
 ---
 
 ## 1. Choose the install scope
 
-Subagents live in one of two places. Pick one per install (don't split the crew
-across both — it fragments the roster and confuses discovery).
+| Scope | Agents | Skills | Hook scripts | Settings |
+|---|---|---|---|---|
+| **Project** | `<ws>/.claude/agents/` | `<ws>/.claude/skills/` | `<ws>/.claude/hooks/` | `<ws>/.claude/settings.json` |
+| **Global** | `~/.claude/agents/` | `~/.claude/skills/` | `~/.claude/hooks/` | `~/.claude/settings.json` |
 
-| Scope | Path | Visible to |
-|---|---|---|
-| **Project** | `<workspace>/.claude/agents/` | Claude Code sessions started inside that workspace |
-| **Global (user)** | `~/.claude/agents/` | Every Claude Code session on the machine |
+Pick one scope for the whole crew. Project scope suits a crew tied to one
+workspace and can be committed with it; global scope suits a personal crew used
+from any directory. If a project and a global item share a name, Claude Code
+prefers the personal (global) skill and the project agent; avoid relying on
+either and keep names unique.
 
-Rules of thumb:
+Personal skills load in local terminal and desktop Code sessions, not in Cowork
+or cloud sessions. Check those surfaces separately.
 
-- **One workspace, agents specific to it** → project scope. The crew travels with
-  the folder, can be committed alongside it, and won't pollute unrelated projects.
-- **Agents the user wants everywhere** (a personal operating team they invoke from
-  any directory) → global scope.
-- **Unsure** → ask in the interview. Default to project scope when the crew
-  references workspace-specific context; default to global when it is a general
-  personal team.
+## 2. The non-git caveat
 
-If both a project and a global agent share the same `name`, the project one wins
-inside that workspace. Avoid relying on this — keep names unique.
-
----
-
-## 2. The non-git caveat (read before choosing project scope)
-
-Claude Code's auto-discovery of **project** agents is reliable inside a directory
-that is a **git repository**. In a folder that is *not* a git repo (for example a
-synced cloud-drive folder, or a plain working directory), project-scoped agents in
-`.claude/agents/` may **not** be picked up automatically.
-
-When the target workspace is not a git repo, do one of the following:
-
-1. **Prefer global scope.** Write the crew to `~/.claude/agents/` instead. This is
-   the most robust option and works regardless of the workspace's git status.
-2. **Recommend `git init`.** If the user wants the crew to live with the workspace,
-   suggest initialising a repo first:
-
-   ```bash
-   git init "<workspace>"
-   ```
-
-   Then project scope discovers normally.
-3. **Mirror to global.** Author the files in the workspace (so they're versioned
-   with the project) but also copy them into `~/.claude/agents/` so Claude Code
-   finds them. If you do this, note in the README that the global copies must be
-   re-synced after edits, or they drift.
-
-State which path you took and why, so the user isn't surprised when an agent does
-or doesn't appear.
+Project-scoped agents and skills are discovered reliably inside a **git
+repository**. In a plain or synced folder they may not load. Then either prefer
+global scope, suggest `git init "<workspace>"`, or author in the workspace and
+mirror to global (and note in the README that the mirror must be re-synced after
+edits). Say which you did.
 
 ---
 
-## 3. Frontmatter rules for each subagent
+## 3. The main loop (`templates/main-loop.md` → `agents/chief-of-staff.md`)
 
-Every agent file begins with YAML frontmatter, then the persona body. The
-templates already carry the body; you fill the frontmatter fields.
-
-```markdown
----
-name: division-lead-acme
-description: Owns everything for the Acme division — strategy, deliverables, and routing within that domain. Invoke when work concerns Acme, its customers, or its roadmap.
-color: blue
----
-
-<persona body starts here>
-```
-
-Field rules:
-
-- **`name`** — kebab-case slug, unique across the crew. Lowercase letters, digits,
-  hyphens only. This is how the agent is addressed (`@name`, or how the
-  orchestrator hands off). Derive it from the role and, for division leads, the
-  domain slug: `division-lead-<slug>`, `architect`, `code-auditor`,
-  `ops-steward`, etc.
-- **`description`** — third person, action-oriented, **trigger-friendly**. This is
-  the single most important field: Claude reads it to decide *when* to invoke the
-  agent. Lead with what it owns, then "Invoke when …" / "Use for …" cues. Keep it
-  one to three sentences. A local lead description may name its division so
-  Claude can route to it. Keep customer details, private facts, paths and
-  credentials in the persona body or outside agent files; never put them in
-  the description.
-  Keep interpolated text on one line and use a YAML folded scalar (`>-`) or
-  quote and escape it: business descriptions may contain colons or quotes.
-  Parse the final YAML frontmatter before reporting the install complete.
-- **`tools`** — leave it out. The agent inherits the tools available to
-  subagents in that session, including connected tools. Claude Code still filters
-  some tools by subagent depth and whether the agent runs in the background.
-  An allowlist also drops anything it does not name, so a stale one can remove
-  connected tools and newly added built-ins.
-  - The auditor and memory harvester use `disallowedTools: Edit, Write,
-    NotebookEdit`. This keeps search, Bash and connected tools available. It is a
-    behaviour rule, not a hard read-only sandbox: Bash can write files and a
-    connected service may expose write actions. If an installation requires a
-    strict read-only boundary, configure tool permissions for that installation.
-  - Use a `tools` allowlist only for a deliberate sandbox, and then name the MCP
-    tools the role needs (`mcp__<server>__*`). Comms personas must still degrade
-    gracefully when their integration is absent (see §4, integration note).
-- **`model`** — leave it out. Claude Code then honours a model chosen for the
-  invocation, the member's `CLAUDE_CODE_SUBAGENT_MODEL` setting, or the main
-  session's model, in that order. `model: inherit` skips the environment setting.
-  A fixed model overrides both that setting and the main session's model unless
-  the invocation chooses another. Offer a pin only when the member asks for one.
-- **`color`** — a display colour for the agent in the UI. Division-lead templates
-  carry a `{{LEAD_COLOR}}` token; fill it from the interview (one of the standard
-  Claude Code colours: `red`, `blue`, `green`, `yellow`, `purple`, `orange`,
-  `pink`, `cyan`). Give specialists distinct colours so the team is scannable.
-
----
-
-## 4. Filling placeholders from the interview
-
-The templates are riddled with `{{TOKENS}}`. Replace every one before writing the
-file — a leftover `{{TOKEN}}` in a shipped agent is a bug. Source the values from
-the interview answers.
-
-### Inject `{{WORKSPACE_CONTEXT}}` into EVERY agent
-
-This is the non-negotiable one. Every template has a `{{WORKSPACE_CONTEXT}}` block.
-Replace it in **all** agents with the same rendered context captured in the
-interview — the user's house style and standing rules, for example:
-
-- Language / spelling variant to write in (do **not** assume one; use what the user
-  stated).
-- Emoji policy (allowed or not).
-- Deliverable versioning convention, if any.
-- Where things get filed / workspace layout notes.
-- Any standing "always do X" rules.
-
-Render it once as a short block and paste the identical text into each agent so the
-whole crew behaves consistently. Example of a filled block (values are
-illustrative — use whatever the interview actually captured):
-
-```markdown
-## Working context
-
-- Write in the user's stated spelling variant. Follow the user's stated emoji policy.
-- Version deliverables by copying to `_v2` before editing; never overwrite `_v1`.
-- File deliverables in the folders the interview captured (e.g. decks under a
-  presentations folder, invoices under a finance folder).
-- Flag genuine ambiguity rather than guessing.
-```
-
-If the user gave no house style, render a minimal neutral block (e.g. "No specific
-house style configured — follow the user's lead and ask if unsure") rather than
-inventing rules.
-
-### Division-lead tokens
-
-For each division lead the interview names, copy the division-lead template and
-fill:
+It stays an agent file so it can be the main session (`claude --agent
+chief-of-staff`, or the front-door `agent` key). Fill:
 
 | Token | Filled with |
 |---|---|
-| `{{LEAD_NAME}}` | Display name of the lead role |
-| `{{LEAD_SLUG}}` | kebab-case slug for `name:` |
-| `{{DOMAIN}}` | The domain it owns (generic label) |
-| `{{WHAT_IT_IS}}` | One-line description of the domain |
-| `{{OWNS}}` | What this lead is responsible for |
-| `{{DOES_NOT_OWN}}` | Explicit out-of-scope, to keep routing clean |
-| `{{KEY_FACTS}}` | Standing facts the lead must always know |
-| `{{HANDOFFS}}` | Which specialists/leads it hands off to and when |
-| `{{LEAD_COLOR}}` | Frontmatter `color:` |
+| `{{DIVISION_SKILLS}}` | One line per installed division skill: `- <slug>: <domain>` |
+| `{{FORK_SKILLS}}` | The installed own-context skill names, comma-separated. If none, delete that paragraph |
+| `{{GOLDEN_TASKS_PATH}}` | Path to the written `golden-tasks.md` |
+| `{{WORKSPACE_CONTEXT}}` | The rendered house-style block (see §7) |
 
-### Specialist / architect / ops tokens
+Do not list the craft skills in the body: their one-line descriptions are
+already in the session's skill listing. Leave out `tools` and `model`, as in
+v0.5.0, so connected tools stay available and the session's model applies.
 
-- **Architect** template has `{{DEFAULT_STACK}}` — fill with the user's chosen
-  default tech stack so the architect proposes in their house stack rather than a
-  generic one.
-- **Ops steward** template has `{{FILING_MAP}}` — fill with where the user files
-  things (the folder map captured in the interview).
-- **Comms agents** have `{{INTEGRATION_SETUP}}` — fill with a generic note naming
-  the *capability* (email send/read, notes sync, calendar, etc.) and the one-time
-  wiring the user must do, plus the instruction to **say plainly when the
-  integration isn't wired rather than fabricate** a result. Do not hardcode a
-  specific vendor as the only option.
+## 4. Skills
 
-After substitution, scan each rendered file for any remaining `{{` — if one
-survives, the install is incomplete.
+A skill is a folder with a `SKILL.md` (YAML frontmatter, then instructions) and
+optional referenced files. Claude sees each skill's `description` at all times
+and loads the body only when the skill is used; referenced files load only when
+the body points the model at them. That is the progressive disclosure the crew
+relies on.
 
----
+**Division skills.** Copy `templates/skills/division/` to
+`skills/<division-slug>/` for each division and fill:
 
-## 5. Regenerate the orchestrator's roster lists
+| Token | File | Filled with |
+|---|---|---|
+| `{{DIVISION_SLUG}}` | SKILL.md | kebab-case name, unique across skills |
+| `{{DIVISION_NAME}}` | all | display name |
+| `{{DOMAIN}}`, `{{WHAT_IT_IS}}` | SKILL.md | the domain and a one-line description |
+| `{{OWNS}}`, `{{DOES_NOT_OWN}}` | SKILL.md | the edges, so the main loop loads the right skill |
+| `{{FILING}}` | SKILL.md | where this division's artefacts go |
+| `{{KEY_FACTS}}`, `{{SOURCES_OF_TRUTH}}` | facts.md | one fact per line with its source |
+| `{{PEOPLE}}` | people.md | roles, owners, who decides |
+| `{{VOICE}}` | voice.md | tone, register, words to use and avoid |
+| `{{OPEN_WORK}}` | open-work.md | live commitments, owners, next steps |
 
-The orchestrator (chief-of-staff) template contains two tokens that describe the
-*team it can route to*: `{{LEADS_LIST}}` and `{{SPECIALISTS_LIST}}`. These must be
-generated **from the roster you actually installed**, not from the full catalogue —
-the orchestrator should only know about agents that exist on disk.
+Anything unknown becomes `- To fill: <what is needed>`, never a guess.
 
-After you've decided which agents to write, build the two lists from their
-frontmatter:
+**Craft skills (inline).** Copy each chosen folder. Fill `{{DEFAULT_STACK}}`
+(architecture), `{{FILING_MAP}}` (back-office) and `{{INTEGRATION_SETUP}}`
+(email, inbox, notes, memory-harvest). The integration note names the
+capability, the one-time wiring and the instruction to say plainly when it is
+not wired. Do not hardcode one vendor as the only option.
 
-- **`{{LEADS_LIST}}`** — one line per installed division lead: its `name` and a
-  one-line scope drawn from `{{OWNS}}` / the description.
-- **`{{SPECIALISTS_LIST}}`** — one line per installed specialist: its `name` and a
-  one-line scope.
+**Own-context skills (`context: fork`).** `web-build`, `video-edit`,
+`course-publish` and `content-engine` carry `context: fork` in their frontmatter.
+Read what that does before describing it to the user:
 
-Rendered example:
+- Claude Code starts a **new subagent** and gives it the skill body as its prompt.
+  The docs are explicit that, despite the name, this is *not* a fork of the
+  current conversation: the subagent does not see the conversation history. The
+  arguments the main loop passes are substituted at `$ARGUMENTS`, which is why
+  each of these skills opens with the brief and stops if it is incomplete.
+- Its tool calls stay out of the main window; only its result comes back. That
+  is the point for tool-heavy jobs.
+- It runs in the background by default (Claude Code 2.1.218 or later). Add
+  `background: false` if the user wants the turn to wait for the result.
+- `agent:` selects the subagent type; the default is `general-purpose`.
+- Fill `{{WORKSPACE_CONTEXT}}` in these four: they do not inherit it.
 
-```markdown
-## Your leads
-- division-lead-acme — owns the Acme domain: strategy, deliverables, routing within it.
-- division-lead-zenith — owns the Zenith domain: roadmap, customers, delivery.
+This is different from a **fork helper** (`subagent_type: "fork"`, or
+`/subtask <task>` by hand), which *does* inherit the whole conversation, shares
+the main session's prompt cache and cannot start further forks. Forks are on by
+default in the terminal from Claude Code 2.1.232 and in `-p`, the Agent SDK, the
+desktop app and VS Code from 2.1.302. The main loop uses forks for side tasks
+that need what it already knows; it uses the own-context skills for heavy jobs
+with a clean brief. `CLAUDE_CODE_FORK_SUBAGENT=0` turns fork mode off;
+`"Agent(fork)"` in `permissions.deny` stops only forks.
 
-## Your specialists
-- architect — system design and tech decisions in the house stack.
-- code-auditor — read-only review for correctness and risk before shipping.
-- ops-steward — filing, versioning, and keeping the workspace tidy.
-- email-writer — brand-aware outbound drafting (says so plainly if email isn't wired).
+**Frontmatter rules for every skill.** `name` matches the folder, lowercase and
+hyphens. `description` leads with the use case; description plus `when_to_use`
+is truncated at 1,536 characters in the listing. Do not add `allowed-tools`
+as a sandbox: it pre-approves tools for the invoking turn and does not restrict
+which tools are available. Keep each `SKILL.md` short: after compaction Claude
+Code re-attaches each invoked skill only up to its first 5,000 tokens, within a
+shared 25,000-token budget, newest first. From 2.1.304 the skill list itself is
+sent again after compaction, and `/reload-skills` sends only new or changed
+skills.
+
+## 5. Helper agents
+
+Agents are single Markdown files with YAML frontmatter. Keep the three that need
+a different context from the main loop:
+
+| Agent | Why it is separate | Frontmatter that matters |
+|---|---|---|
+| `code-reviewer` | Must not inherit the builder's assumptions; sees only the spec and the diff | `effort: high`, `disallowedTools: Edit, Write, NotebookEdit`, `omitClaudeMd: true` (2.1.271+) unless the user's CLAUDE.md holds standards it must apply |
+| `verifier` | Knows only the user flow; checks what a user experiences | `disallowedTools: Edit, Write, NotebookEdit` |
+| `researcher` | Needs nothing from the main loop; keeps raw reading out of it | no `effort`: the main loop passes one per call |
+
+Field rules:
+
+- **`effort`** sets how hard the helper thinks (`low`, `medium`, `high`, `xhigh`,
+  `max`, depending on the model). The main loop can also pass `effort` on each
+  Agent call (2.1.292+), which overrides the frontmatter. Precedence: the
+  `CLAUDE_CODE_EFFORT_LEVEL` environment variable, then the per-call parameter,
+  then frontmatter, then the session level. It does not apply to forks, which
+  run exactly as the main session does.
+- **`autoCompactWindow`** (2.1.296+) lets one helper compact earlier, for
+  example `autoCompactWindow: 200000` on a researcher that reads long logs.
+  Write a plain integer; `200k` is read as 200 and ignored.
+- **`tools` / `model`**: leave out, as in v0.5.0. `disallowedTools` is a
+  behaviour boundary, not a sandbox: Bash and connected tools can still write.
+- **`color`**: one of `red`, `blue`, `green`, `yellow`, `purple`, `orange`,
+  `pink`, `cyan`.
+- Keep private facts out of every `description`.
+
+## 6. Hook gates
+
+Hard rules live in hooks, not in prose. Claude Code runs a hook every time its
+event fires, whether or not the model remembers the rule.
+
+**Write order:** back up the settings file to
+`settings.json.bak-YYYYMMDD-HHMMSS`; copy the chosen scripts to the hooks
+directory and `chmod +x` them; parse the settings JSON; append the approved
+entries under `hooks.PreToolUse` without touching anything else; write; parse
+again. Never print the full settings file.
+
+**Example block** (project scope; for global scope use `$HOME/.claude/hooks/...`):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git push *)",
+            "command": "\"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/gate-protected-push.sh ask \"main release/*\"",
+            "timeout": 10,
+            "onFailure": "block",
+            "statusMessage": "Checking the push gate"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "\"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/gate-secrets-in-commit.sh deny",
+            "timeout": 20,
+            "onFailure": "block",
+            "statusMessage": "Checking the commit for secrets"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__<mail-server>__send.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/gate-confirm.sh \"sending email\" ask",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ]
+  }
+}
 ```
 
-If the user later adds or removes an agent, **re-render these two lists** so the
-orchestrator's map stays accurate. A stale roster makes the orchestrator route to
-agents that aren't there.
+**How the pieces work** (from the Claude Code hooks reference):
 
----
+- `matcher` filters the tool name. Letters, digits, `_`, `-`, `|` and `,` are an
+  exact name or list; anything else is an unanchored regular expression, so
+  `mcp__<server>__send.*` matches that server's send tools. Use the real server
+  and tool names found in Step 1.
+- `if` is one permission rule such as `Bash(git push *)`. It checks each
+  subcommand of a compound command, but it is best-effort and `git -C dir push`
+  does not match `Bash(git push *)`. The scripts filter the command themselves,
+  so dropping `if` widens coverage at the cost of running the script on every
+  Bash call.
+- **`"onFailure": "block"`** (Claude Code 2.1.295 or later) makes a gate that
+  cannot start, times out, exits with an unexpected code or prints invalid JSON
+  **block** the action. Without it, a broken or slow gate lets the action through.
+  The scripts need `jq` or `python3`; without either they exit 1, which blocks.
+  That is why the `if` filters matter: they keep a broken gate from blocking
+  unrelated commands.
+- Exit 2 blocks and feeds stderr to Claude. Exit 0 with
+  `"permissionDecision": "ask"` prompts the user.
 
-## 6. Write the team README
+**Choosing ask or deny.** `ask` shows the user a permission prompt with the
+gate's reason, and the docs state that a hook's `ask` still forces a prompt in
+auto mode. In a `claude -p` run nobody can answer, so calls that would prompt are
+denied. Behaviour under bypass-permissions mode is not documented: if the user
+runs that way, use `deny` (the gate blocks and the main loop asks the user in
+chat; the user then runs the action themselves or approves it explicitly).
+Secrets default to `deny`.
 
-The team-readme template (`{{ROSTER_TABLE}}`) becomes a human-facing index of the
-crew. Write it next to the agents:
+**Test every gate before you finish** by piping a sample input into the script
+as Claude Code would, in a scratch repository, never against the user's real
+remote:
 
-- Project scope → `<workspace>/.claude/agents/README.md`
-- Global scope → `~/.claude/agents/README.md`
+```bash
+printf '%s' '{"tool_name":"Bash","cwd":"/tmp/gate-test","tool_input":{"command":"git push origin main"}}' \
+  | .claude/hooks/gate-protected-push.sh deny; echo "exit $?"   # expect 2
+printf '%s' '{"tool_name":"Bash","cwd":"/tmp/gate-test","tool_input":{"command":"ls"}}' \
+  | .claude/hooks/gate-protected-push.sh deny; echo "exit $?"   # expect 0
+```
 
-Generate `{{ROSTER_TABLE}}` from the installed files — one row per agent:
+Then, in the new session, confirm one live block during the first drive.
+
+**Other irreversible actions** from the interview (writing to a live database,
+payments, deploys, deletions) use `gate-confirm.sh "<label>" ask|deny` behind a
+matcher for the tool that performs them, for example the database MCP server's
+write tools or `"if": "Bash(psql *)"`.
+
+## 7. `{{WORKSPACE_CONTEXT}}`
+
+Render the user's house style once as a short block: spelling variant (do not
+assume one), emoji policy, versioning, filing notes and standing rules. Paste
+the identical block into the main loop, the four own-context skills and the
+three helpers. Inline skills do not carry it; they run inside the main loop. If
+the user gave no house style, render "No specific house style configured:
+follow the user's lead and ask if unsure."
+
+## 8. Golden tasks, README and QUICKSTART
+
+Write `golden-tasks.md`, `README.md` (from `team-readme-template.md`, filling
+`{{ROSTER_TABLE}}`) and `QUICKSTART.md` into the agents directory. The roster
+table has one row per installed item:
 
 ```markdown
-| Agent | Role | Model | Invoke when |
+| Name | Kind | Runs | Use when |
 |---|---|---|---|
-| chief-of-staff | Orchestrator | session default | Anything cross-cutting; routes to the right lead/specialist. |
-| division-lead-acme | Lead | session default | Work concerns the Acme domain. |
-| architect | Specialist | session default | System design or a tech decision is needed. |
-| code-auditor | Specialist | session default | Reviewing a change before it ships. |
+| chief-of-staff | main loop | main session | Always: plans and does the work |
+| business-one | division skill | inline | Work for Business One |
+| decks | craft skill | inline | Slides are needed |
+| web-build | own-context skill | own context, background | Building and shipping a site |
+| code-reviewer | helper agent | fresh window, effort high | Before a consequential change ships |
+| gate-protected-push | hook gate | every matching push | Push to main or release |
 ```
 
-The README should also note: the install scope chosen, the non-git caveat if it
-applied (and what you did about it), and how to re-sync if you mirrored to global.
+## 9. Restart
 
----
-
-## 7. Tell the user to restart
-
-Claude Code loads the agent roster at session start. Files you've just written are
-**picked up on the next session, not the current one.** Always end the install with
-an explicit instruction:
-
-> The crew is installed in `<path>`. Start a **new** Claude Code session (or
-> restart the current one) so the agents load. Then invoke the orchestrator with
-> `@chief-of-staff` for anything cross-cutting, or call any agent by its `name`.
-
-If you mirrored project files to global because the workspace isn't a git repo, also
-remind the user to re-run the sync after editing any agent, or the loaded global
-copies will be stale.
-
----
+Agents, skills and settings load at session start. Tell the user to start a
+new session (or run `/reload-skills` and `/reload-plugins`), then run
+`claude --agent chief-of-staff`.
 
 ## Quick checklist
 
-- [ ] Scope chosen (project vs global); non-git caveat handled.
-- [ ] Every template copied; every `{{TOKEN}}` filled (grep for leftover `{{`).
-- [ ] `{{WORKSPACE_CONTEXT}}` injected identically into **every** agent.
-- [ ] Frontmatter valid on each: kebab-case `name`, trigger-friendly `description`,
-      no stock `tools` allowlist, no stock `model` pin, a `color`.
-- [ ] No real-world names, brands, domains, emails, or personal paths in any
-      shipped file.
-- [ ] Orchestrator `{{LEADS_LIST}}` / `{{SPECIALISTS_LIST}}` regenerated from the
-      actual roster.
-- [ ] Team README written with `{{ROSTER_TABLE}}`.
-- [ ] User told to restart the session.
+- [ ] Scope chosen; non-git caveat handled.
+- [ ] Every token filled; grep for leftover `{{`.
+- [ ] Every frontmatter block parses; skill `name` matches its folder.
+- [ ] `{{WORKSPACE_CONTEXT}}` in the main loop, own-context skills and helpers only.
+- [ ] Settings backed up; only `hooks` (and `agent` if chosen) changed; JSON parses.
+- [ ] Each gate tested with a matching and a non-matching input.
+- [ ] No real names, brands, domains, emails or personal paths in shipped text.
+- [ ] README, QUICKSTART and `golden-tasks.md` written; user told to restart.
+
+---
+
+## Legacy shape (v0.5 agents, on request only)
+
+If the user asks for the v0.5 shape, render from `templates/legacy/` as v0.5.0
+did: `legacy/orchestrator.md` as `chief-of-staff`, `legacy/division-lead.md`
+once per division (`{{LEAD_NAME}}`, `{{LEAD_SLUG}}`, `{{DOMAIN}}`,
+`{{WHAT_IT_IS}}`, `{{OWNS}}`, `{{DOES_NOT_OWN}}`, `{{KEY_FACTS}}`, `{{HANDOFFS}}`,
+`{{LEAD_COLOR}}`), the chosen `legacy/specialists/` and `legacy/comms/` agents
+(`{{DEFAULT_STACK}}`, `{{FILING_MAP}}`, `{{INTEGRATION_SETUP}}`), and
+`{{WORKSPACE_CONTEXT}}` in every agent. Regenerate the orchestrator's
+`{{LEADS_LIST}}` and `{{SPECIALISTS_LIST}}` from the agents actually written. No
+`tools` allowlists and no `model` pins. Hook gates (§6) and golden tasks (§8)
+apply unchanged; recommend running the golden tasks against both shapes before
+the user settles on the legacy one.

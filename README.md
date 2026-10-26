@@ -1,11 +1,14 @@
 # chief-of-staff-kit
 
-**A customisable team of AI agents for Claude Code and Codex.** Install a
-**chief-of-staff** orchestrator that triages your work and routes it to **division
-leads** and **specialists** — all scaffolded to fit *your* org through a short
-interview. No two installs look the same.
+**One chief of staff for Claude Code and Codex.** It is a single main loop that
+plans the work, does the work and keeps the context. Your divisions and crafts are
+**skills** it opens when it needs them, three **helpers** run in their own window
+when a separate context changes the result, **hooks** hold the actions you never
+want taken without a yes, and **ten golden tasks** tell you whether a change
+helped. A short interview fits all of it to your work. No two installs look the
+same.
 
-![A chief-of-staff orchestrator routing to division leads, each fanning out to specialist agents](assets/hero.jpg)
+![chief-of-staff-kit v0.6.0: the chief of staff as one main loop, with division and craft skills it opens when needed, three helpers in a fresh window, own-context skills, hook gates and golden tasks](assets/hero.jpg)
 
 ---
 
@@ -19,36 +22,82 @@ kit. It needs no BluPlai account, and changes to the board appear there live.
 
 ## What you get
 
-One team shape, instantiated to fit anyone:
-
 ```
-                    chief-of-staff            ← triages, routes, synthesises
-        ┌───────────────┼───────────────┐
-     lead A           lead B           lead C  ← one lead per "division"
-        └───────────────┼───────────────┘
-                 (any lead pulls in any specialist)
-   architect · code-auditor · program-manager · problem-solver
-   presentation-writer · voice-scriptwriter · growth-marketer
-   product-designer · ops-steward · content-engine
-   web-builder · video-editor · skool-writer-and-publish     ← 13 specialists
-   inbox-reader · email-writer · notes-archivist · memory-harvester  ← 4 opt-in comms
+                          chief-of-staff               ← the main loop: plans, does the work, keeps the context
+                                │
+      loads a skill when needed ┼ calls a helper only when a separate context changes the result
+                                │
+  division skills    Business One · Business Two · …   ← facts, people, voice, filing, open work
+  craft skills       architecture · program-plan · problem-solving · decks · voice-scripts · growth
+                     product-design · back-office · email · inbox · notes · memory-harvest
+  own-context skills web-build · video-edit · course-publish · content-engine   ← run in their own context
+  helpers            code-reviewer · verifier · researcher                       ← fresh window
+  hooks              gates on your irreversible actions (a broken gate blocks too)
+  evals              golden-tasks.md: ten tasks, run twice before and after any change
 ```
 
-A **"division"** is whatever unit you run: a business, a department, a team, a
-product line, a client portfolio, or a person you manage. You might have four
-companies; someone else has two departments and five reports. The installer learns
-*your* structure and generates one lead per division, then wires the chief-of-staff
-to route across exactly that team.
+A **division** is whatever unit you run: a business, a department, a team, a
+product line, a client book, or a person you manage. Each one becomes a skill:
+the main loop sees a one-line summary and opens the full file (facts, people,
+voice, filing, open work) only when the work touches it.
 
-The value isn't the names — it's the **operating doctrine** baked into each agent:
-clean-brief delegation, explicit ownership boundaries, "work alone vs convene a
-council", generator-plus-reviewer pairing, and decisive synthesis instead of a menu
-of options.
+| Piece | What it is | Why it is that and not an agent |
+|---|---|---|
+| **chief-of-staff** | The main session (`claude --agent chief-of-staff`) | It holds the conversation from the first message to the result, so nothing is lost in a hand-off |
+| **Division skills** | One per division, short, with referenced files | The division's knowledge is needed *in* the loop, not in a separate window |
+| **Craft skills** | Twelve procedures: decks, email, back office, growth… | A procedure the main loop follows needs no context of its own |
+| **Own-context skills** | Four tool-heavy jobs with `context: fork` | Their tool output (builds, renders, uploads) would flood the main window |
+| **code-reviewer** | Fresh window, spec and diff only, `effort: high` | The builder's context would hurt: it shares the builder's blind spots |
+| **verifier** | Drives the browser or app, knows only the user flow | Same reason: it checks what a user sees, not what was meant |
+| **researcher** | Clean-window research helper | It needs nothing from the main loop, and its raw reading stays out |
+| **Hook gates** | PreToolUse hooks with `"onFailure": "block"` | Hard rules in prose get forgotten; a hook runs every time |
+| **golden-tasks.md** | Ten tasks with "done" lines | So "this is better" is a score, not an opinion |
+
+## Why one loop
+
+Up to v0.5.0 this kit installed an org chart: a chief of staff that routed to a
+lead per division, and leads that pulled in specialists. Every hop was a
+hand-off, and hand-offs drop decisions. In the author's own use, the generic
+helpers, forks and the code reviewer did almost all of the delegated work; the
+named division leads were almost never called.
+
+Anthropic's article [*Building agents: When to fold subagents into your main
+agent loop*](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop)
+(22 October 2026) names the same failure modes in larger systems: context lost
+at each hand-off, subagent sprawl, the "Frankenprompt" of conflicting rules,
+evals that test one piece only, and latency (one customer's single loop ran
+roughly twice as fast). Its rule is the one this kit now follows: fold a
+subagent in, and keep it as a subagent only if the folded version scores worse.
+
+**The one question before any helper:** does what the main loop already knows
+**help, hurt, or not matter**?
+
+- **Helps** → do it inline. This is the usual answer.
+- **Hurts** → a fresh reviewer (`code-reviewer`, `verifier`).
+- **Does not matter** → a clean-window helper (`researcher`).
+- **Several truly independent heavy jobs** → forks in parallel; five or more
+  becomes a workflow.
+
+Three recent Claude Code changes make this practical:
+
+- **Fork helpers** (on by default in `-p`, the SDK, desktop and VS Code from
+  2.1.302; in the terminal from 2.1.232). A fork inherits the whole
+  conversation and shares its prompt cache, but its tool calls stay out of the
+  main window. `/subtask <task>` starts one by hand.
+- **Skills survive compaction** (2.1.304). The skill list is sent again after
+  compaction, so a long session keeps its divisions and crafts. Invoked skill
+  bodies are re-attached up to 5,000 tokens each and 25,000 in total, which is
+  why every skill here is short with detail in referenced files.
+- **Effort per helper** (2.1.292). The main loop can run the reviewer at `high`
+  and a quick lookup at `low` without a separate agent per effort level.
+
+And hooks with `"onFailure": "block"` (2.1.295) mean a broken or slow gate
+blocks the action instead of letting it through.
 
 ## Install in Claude Code
 
-You need [Claude Code](https://claude.com/claude-code). Add the plugin in the
-client you use:
+You need [Claude Code](https://claude.com/claude-code) 2.1.295 or later for
+every feature above (earlier versions install, without them). Add the plugin:
 
 **Terminal:**
 
@@ -62,26 +111,23 @@ client you use:
    ```
    (Or run `/plugin`, choose **Browse marketplaces**, and install **chief-of-staff-kit**
    from the menu.)
+
 **Claude desktop app:** open **Code** for a local workspace. In **Customize →
 Plugins → Add plugin → Add marketplace → Add from a repository**, enter
 `https://github.com/skyremote/chief-of-staff-kit`. Install
 **chief-of-staff-kit** from that marketplace and start a new local Code session.
 
-Then tell Claude **`install the crew`**. The installer interviews you (or reads your
-existing `CLAUDE.md`), shows you a plan to approve, then writes your agents into your
-project (`.claude/agents/`) or globally (`~/.claude/agents/`). Start another new
-session to load them. In the terminal, `claude --agent chief-of-staff` starts an
-orchestrated session. In the desktop Code tab, ask for the chief of staff or a
-named specialist and check that a real delegation appears in **Tasks**. The
-installer can also make the chief of staff the default local session if you choose.
+Then tell Claude **`install the crew`**. The installer reads your existing
+`CLAUDE.md` (or interviews you), asks which actions must never happen without
+your yes, and shows you the whole plan, including the exact hooks block it will
+add to your settings. Nothing is written until you approve; your settings file
+is backed up first. Start a new session and run `claude --agent chief-of-staff`.
+The installer can also make it the default local session if you choose.
 
 The local Code tab shares Claude Code's local configuration. Chat, Cowork and
 cloud sessions load extensions differently; check those surfaces separately.
 
 ## Update an existing crew
-
-If you installed an earlier version, you do not need to reinstall your team or lose its
-customisation:
 
 ```text
 /plugin marketplace update skyremote
@@ -90,20 +136,30 @@ customisation:
 /chief-of-staff-kit:update-crew
 ```
 
+Updating the plugin does not rewrite your crew. **If you run a v0.5 crew**,
+`update-crew` offers the migration to one loop and does it the measured way:
+
+1. **Audit** every agent: fold (becomes a skill), merge (two roles that always
+   run together), call as a tool (keeps its own context, returns a compact
+   result) or keep (its context must differ).
+2. **Back up** the whole crew, with a `RESTORE.md`, before the first change.
+3. **Baseline** your ten golden tasks, twice.
+4. **Fold one role at a time,** re-run the tasks twice, and keep the change only
+   if it scores at least as well. Otherwise that role is restored.
+
+You can stop at any point; a crew with some roles folded is fine. You can also
+stay on agents: the updater still applies the current frontmatter rules. For
+larger agent systems, Anthropic's
+[single-agent-loop-kit](https://github.com/anthropics/single-agent-loop-kit)
+runs the same audit with scripts.
+
 In the desktop app, update the plugin in **Customize → Plugins**, start a new
-local Code session, then run `update-crew` there. Updating the plugin does not
-rewrite an existing crew: the updater previews changes, backs up touched files
-and preserves your divisions and workspace rules.
+local Code session, then run `update-crew` there. See `CHANGELOG.md` for what
+each version changed.
 
-See `CHANGELOG.md` for what each version changed — the operating doctrine your crew runs on
-moves between releases, so an old render can be enforcing rules that are no longer true.
-
-**Hand-copied crew (no plugin installed)?** If you copied the templates into
-`~/.claude/agents/` by hand and personalised them, the marketplace commands above don't
-apply to you — but the updater still does. Clone or pull this repo, make the
-`update-crew` skill available (or just point Claude at `skills/update-crew/SKILL.md` in
-your clone), and run it: it updates the agents you actually have, wherever they came
-from, and preserves your customisation the same way.
+**Hand-copied crew (no plugin installed)?** Clone or pull this repo, point Claude
+at `skills/update-crew/SKILL.md` in your clone, and run it: it updates the crew
+you actually have and preserves your customisation the same way.
 
 To configure Anthropic's advisor primitive after updating, run:
 
@@ -124,40 +180,43 @@ Then ask Claude to **install the crew**.
 
 Clone this repository, open your target workspace in Codex, and ask Codex to read
 `skills/install-crew/SKILL.md` from the clone and install the crew for Codex.
-The same personas render as native custom-agent TOML files under
-`.codex/agents/` or `~/.codex/agents/`, plus a chief-of-staff section in the
-root `AGENTS.md`. The root session uses that section to coordinate the crew;
-ask it for a named agent when you want a hand-off. Current Codex releases can
-spawn these agents in the desktop app, CLI and IDE. The installer uses legacy
-prompt files only when an older Codex release lacks custom agents.
+The root session takes the main-loop doctrine from a team section in `AGENTS.md`,
+skills go to `.agents/skills/`, and the helpers and the four heavy jobs become
+custom agents under `.codex/agents/`. Codex hooks have no `ask` and no
+`onFailure`, so its gates always deny, and a gate that errors lets the action
+through; the installer says so and asks you to review the hooks with `/hooks`.
 
-## How it works
+## The legacy shape
 
-1. **Reads before it asks** — if you have a `CLAUDE.md` / `AGENTS.md`, the installer
-   proposes a draft org from it rather than interrogating you cold.
-2. **Interviews** — confirms your divisions, which specialists to include, any
-   integration agents to opt into, your house style, and where to install.
-3. **Renders** — fills the templates, injects your house style into every agent,
-   regenerates the orchestrator's roster, and writes a team `README`.
-4. **Updates safely** — on later runs, inventories the installed roster and preserves
-   customised facts while bringing the operating doctrine and available roles forward.
+If you prefer the v0.5 shape (an orchestrator routing to division-lead and
+specialist agents), ask the installer for it. The templates are kept unchanged
+under `skills/install-crew/templates/legacy/`, and hook gates and golden tasks
+work with either shape. Run the golden tasks against both before you settle.
 
-The source templates and skills are Markdown. Codex custom agents are generated
-as TOML. There is no build step — the installer follows
-[`skills/install-crew/SKILL.md`](skills/install-crew/SKILL.md).
+![The v0.5 shape: a chief-of-staff orchestrator routing to division leads, each fanning out to specialist agents](assets/legacy/hero-v0.5.jpg)
 
 ## What's in here
 
 ```
 .claude-plugin/        plugin + marketplace manifests
 skills/install-crew/
-  SKILL.md             the installer (interview → render → write)
-  templates/           the canonical agent personas (generic, placeholder-driven)
+  SKILL.md             the installer (interview → plan → render → test)
+  templates/
+    main-loop.md       the chief of staff
+    skills/            division skill, craft skills, own-context skills
+    agents/            code-reviewer, verifier, researcher
+    hooks/             example gate scripts
+    evals/             golden-tasks.md
+    legacy/            the v0.5 agent templates, unchanged
   references/          how to render for Claude Code and Codex
-skills/update-crew/    in-place updater for existing installations
+skills/update-crew/    in-place updater and v0.5 → one-loop migration
 skills/advisor/        advisor adoption and verification runbook
 assets/                README art
 ```
+
+Everything is Markdown, plus three POSIX shell gate scripts. There is no build
+step; the installer follows
+[`skills/install-crew/SKILL.md`](skills/install-crew/SKILL.md).
 
 ## License
 

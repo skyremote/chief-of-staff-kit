@@ -1,6 +1,7 @@
 ---
 name: voice-scripts
-description: Write for the ear: voiceovers, narration, demo and video scripts, audio scripts. Use when content will be spoken rather than read.
+description: >-
+  Write for the ear: voiceovers, narration, demo and video scripts, audio scripts. Use when content will be spoken rather than read.
 ---
 
 # Voice scripts

@@ -1,6 +1,7 @@
 ---
 name: memory-harvest
-description: Pull context out of memory-bearing tools (meeting-notes apps, notebooks, memory servers): what was said in a meeting, prior context on a person or topic. Read-only.
+description: >-
+  Pull context out of memory-bearing tools (meeting-notes apps, notebooks, memory servers): what was said in a meeting, prior context on a person or topic. Read-only.
 ---
 
 # Memory harvest

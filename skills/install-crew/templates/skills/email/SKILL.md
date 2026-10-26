@@ -1,6 +1,7 @@
 ---
 name: email
-description: Draft outbound email in the right division's voice: client replies, outreach, follow-ups, introductions. Drafts by default; sending is gated. Use for any email the user wants written.
+description: >-
+  Draft outbound email in the right division's voice: client replies, outreach, follow-ups, introductions. Drafts by default; sending is gated. Use for any email the user wants written.
 ---
 
 # Email

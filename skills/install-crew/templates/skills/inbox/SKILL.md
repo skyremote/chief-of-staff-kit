@@ -1,6 +1,7 @@
 ---
 name: inbox
-description: Search, read, triage and summarise email: pull threads with a contact, surface what needs a reply, extract receipts and invoices, brief the user on the inbox. Read-only unless explicitly asked.
+description: >-
+  Search, read, triage and summarise email: pull threads with a contact, surface what needs a reply, extract receipts and invoices, brief the user on the inbox. Read-only unless explicitly asked.
 ---
 
 # Inbox

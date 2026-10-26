@@ -1,6 +1,7 @@
 ---
 name: product-design
-description: UX and UI for web pages and app interfaces: design systems, wireframes, layouts, components and making products feel premium. Use for any interface design or redesign.
+description: >-
+  UX and UI for web pages and app interfaces: design systems, wireframes, layouts, components and making products feel premium. Use for any interface design or redesign.
 ---
 
 # Product design

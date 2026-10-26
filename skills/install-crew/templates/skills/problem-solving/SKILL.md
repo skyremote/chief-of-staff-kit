@@ -1,6 +1,7 @@
 ---
 name: problem-solving
-description: First-principles framing for hard, ambiguous or stuck problems: strategy and pricing calls, untangling a mess, modelling scenarios, mapping options. Use when a decision is unclear or a problem feels stuck.
+description: >-
+  First-principles framing for hard, ambiguous or stuck problems: strategy and pricing calls, untangling a mess, modelling scenarios, mapping options. Use when a decision is unclear or a problem feels stuck.
 ---
 
 # Problem solving

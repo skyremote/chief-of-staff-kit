@@ -1,6 +1,6 @@
 {
   "name": "chief-of-staff-kit",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Install or update a customised chief of staff for Claude Code and Codex: one main loop with division and craft skills, three helper agents, hook gates, and golden tasks run for you in a safe test mode.",
   "author": {
     "name": "skyremote",

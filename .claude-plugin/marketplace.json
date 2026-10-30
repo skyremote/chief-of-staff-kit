@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "One chief of staff for Claude Code and Codex: one main loop with skills, helpers, hook gates and evals.",
-    "version": "0.7.0"
+    "version": "0.7.1"
   },
   "plugins": [
     {

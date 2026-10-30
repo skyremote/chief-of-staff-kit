@@ -177,6 +177,17 @@ class Builtins(unittest.TestCase):
         with open(log, encoding="utf-8") as handle:
             self.assertEqual(json.loads(handle.readline())["tool"], "Bash")
 
+    def test_blocked_reads_may_try_again(self):
+        env = dict(os.environ, CREW_TEST_MODE="1")
+        def reason(tool, data):
+            proc = subprocess.run([sys.executable, HOOK], input=json.dumps(
+                {"tool_name": tool, "tool_input": data, "cwd": "/tmp"}), capture_output=True,
+                text=True, env=env)
+            return json.loads(proc.stdout)["hookSpecificOutput"]["permissionDecisionReason"]
+        self.assertIn("Read, Grep or Glob", reason("Bash", {"command": "cat a | head"}))
+        self.assertIn("do not try another route", reason("Bash", {"command": "git push"}))
+        self.assertIn("do not try another route", reason("mcp__x__send_email", {}))
+
     def test_log(self):
         log = tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False).name
         decide("Bash", {"command": "git push"}, {"CREW_TEST_LOG": log})

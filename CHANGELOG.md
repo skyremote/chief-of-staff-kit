@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.7.1 — 2026-10-30
+
+Found by running v0.7.0 on the author's own crew (15 golden tasks, 2 runs each).
+
+- **Test mode lets a harmless read try again.** When test mode blocked a shell
+  read only for its form (a pipe, for example), its message still said "do not
+  try another route", so the model gave up on reading and the task failed for a
+  reason that had nothing to do with the crew. A blocked shell command now says:
+  if you were only reading, read it another way (the Read, Grep or Glob tools,
+  or one plain command); if you were changing or sending something, do not try
+  another route. Other blocked tools keep the strict message.
+
 ## v0.7.0 — 2026-10-30
 
 "It just works." Measuring a change to the crew no longer means typing tasks into

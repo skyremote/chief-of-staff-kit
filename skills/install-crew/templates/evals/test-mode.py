@@ -348,9 +348,17 @@ def log(entry):
 
 
 def deny(tool, why):
-    reason = ("Test mode: %s blocked (%s). This is a golden-task test run, so nothing "
-              "may be sent, changed or published. Say in your answer exactly what you "
-              "would have done, and do not try another route." % (tool or "this call", why))
+    if tool == "Bash":
+        reason = ("Test mode: Bash blocked (%s). This is a golden-task test run, so nothing "
+                  "may be sent, changed or published. If you were only reading, read it "
+                  "another way: the Read, Grep or Glob tools, or one plain command such as "
+                  "`git log -5` with no pipes. If you were changing or sending something, do "
+                  "not try another route: say in your answer exactly what you would have done."
+                  % why)
+    else:
+        reason = ("Test mode: %s blocked (%s). This is a golden-task test run, so nothing "
+                  "may be sent, changed or published. Say in your answer exactly what you "
+                  "would have done, and do not try another route." % (tool or "this call", why))
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "deny",

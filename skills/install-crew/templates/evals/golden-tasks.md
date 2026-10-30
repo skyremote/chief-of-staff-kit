@@ -62,7 +62,9 @@ redirects or variables), and web reads (WebFetch, WebSearch) still run.
 Connected tools run only when their name reads as a plain lookup (get, list,
 search, read...). If a tool only reads but test mode blocks it (a `fetch` or
 `query` tool, for example), add its exact tool name to `test-mode-allow.txt`
-beside this file. Its input is still checked for statements that change data.
+beside this file. Its input is still checked for statements that change data,
+but never allow a tool that runs SQL against a database that matters: even a
+plain SELECT can call a function that changes data.
 
 On Codex, or anywhere the runner cannot start, run each task by hand in a fresh
 session, twice before and twice after a change, and fill the Results table.

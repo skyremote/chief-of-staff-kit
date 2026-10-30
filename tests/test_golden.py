@@ -110,6 +110,25 @@ class Checks(unittest.TestCase):
         with self.assertRaises(golden.SetupError):
             golden.cmd_check(self.opts("fold-d"), self.tasks)
 
+    def test_partly_finished_before_run_is_incomplete(self):
+        os.remove(golden.result_path(self.results, "baseline", "2", 2))
+        for task in ("1", "2"):
+            for rep in (1, 2):
+                record(self.results, "fold-f", task, rep, True)
+        with self.assertRaises(golden.SetupError):
+            golden.cmd_check(self.opts("fold-f"), self.tasks)
+        self.assertEqual(golden.last_kept(self.results), "baseline")
+
+    def test_new_task_is_skipped_not_incomplete(self):
+        tasks = self.tasks + [{"id": "3", "task": "v", "done": "f", "kind": "failure", "hash": "h"}]
+        golden.write_json(os.path.join(self.results, "baseline", "x.json.ignore"), {})
+        with open(os.path.join(self.results, "baseline", "tasks.manifest"), "w") as handle:
+            json.dump({"1": "h", "2": "h"}, handle)
+        for task in ("1", "2", "3"):
+            for rep in (1, 2):
+                record(self.results, "fold-g", task, rep, True)
+        self.assertEqual(golden.cmd_check(self.opts("fold-g"), tasks), 0)
+
     def test_partial_rerun_is_topped_up(self):
         for rep, passed in ((1, True), (2, False), (3, True), (4, False)):
             record(self.results, "fold-e", "1", rep, passed)

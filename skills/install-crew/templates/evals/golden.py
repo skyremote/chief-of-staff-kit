@@ -34,6 +34,7 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -91,6 +92,18 @@ class SetupError(Exception):
 
 
 DEFAULT_REPS = 2
+STOP = threading.Event()          # set on Ctrl-C or SIGTERM: nothing more is started or recorded
+CHILDREN = set()
+CHILDREN_LOCK = threading.Lock()
+
+
+def stop_children():
+    with CHILDREN_LOCK:
+        for proc in list(CHILDREN):
+            try:
+                proc.terminate()
+            except OSError:
+                pass
 
 
 # ---------------------------------------------------------------- tasks
@@ -270,14 +283,23 @@ def scratch_files(root, limit=3):
 
 
 def run_claude(args, prompt, env, cwd, timeout):
+    if STOP.is_set():
+        raise Paused("interrupted")
     proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, text=True, env=env, cwd=cwd)
+    with CHILDREN_LOCK:
+        CHILDREN.add(proc)
     try:
         out, err = proc.communicate(prompt, timeout=timeout)
     except subprocess.TimeoutExpired:
         proc.kill()
         out, err = proc.communicate()
         return out, err, None
+    finally:
+        with CHILDREN_LOCK:
+            CHILDREN.discard(proc)
+    if STOP.is_set():
+        raise Paused("interrupted")
     return out, err, proc.returncode
 
 
@@ -384,9 +406,13 @@ class Runner:
         env = dict(self.env)
         env["CREW_TEST_SCRATCH"] = scratch
         env["CREW_TEST_LOG"] = log_path
+        timeouts = 0
         for attempt in range(3):
             out, err, code = run_claude(self.session_args(), prompt, env, self.opts.cwd, timeout)
             if code is None:
+                timeouts += 1
+                if timeouts < 2:
+                    continue
                 return {"timeout": True, "calls": [], "final": None, "stderr": ""}
             if code < 0:
                 raise Paused("interrupted")
@@ -407,6 +433,8 @@ class Runner:
                     self.note("Bypass mode is off in this setup, so test sessions use your normal "
                               "permissions. Tools that would ask are denied.")
                     continue
+                if final is None and kind == "other" and code != 0:
+                    raise SetupError("Claude Code failed (exit %s): %s" % (code, clip(failure, 300)))
                 if kind == "transient" or final is None:
                     if attempt < 2:
                         time.sleep(60 * (attempt + 1))
@@ -494,6 +522,8 @@ class Runner:
                 continue
             if attempt < 2:
                 time.sleep(30 * (attempt + 1))
+        if kind == "transient":
+            raise Paused("the grader stayed unavailable: %s" % clip(failure, 160))
         raise SetupError("The grader failed three times, so nothing was counted: %s" % clip(failure, 200))
 
     def one(self, label, task_id, rep):
@@ -515,12 +545,16 @@ class Runner:
             final = outcome.get("final") or {}
             answer = str(final.get("result") or "")
             if outcome.get("timeout"):
-                grade = {"pass": False, "reason": "Timed out after %d s." % self.opts.timeout}
+                grade = {"pass": False, "reason": "Timed out twice after %d s each." % self.opts.timeout}
             elif not final:
                 grade = {"pass": False, "reason": "The session ended without an answer: %s"
                          % outcome.get("stderr", "")}
             else:
+                if STOP.is_set():
+                    raise Paused("interrupted")
                 grade = self.grade(task, answer, outcome["calls"], log, files)
+            if STOP.is_set():
+                raise Paused("interrupted")
         except Paused as limit:
             with self.lock:
                 self.pause_text = str(limit)
@@ -545,6 +579,12 @@ class Runner:
 
     def run_many(self, label, jobs):
         os.makedirs(os.path.join(self.opts.results, label), exist_ok=True)
+        manifest_path = os.path.join(self.opts.results, label, "tasks.manifest")
+        manifest = read_manifest(self.opts.results, label)
+        for task_id, _ in jobs:
+            manifest[task_id] = self.tasks[task_id]["hash"]
+        with open(manifest_path, "w", encoding="utf-8") as handle:
+            json.dump(manifest, handle, indent=1)
         ignore = os.path.join(self.opts.results, ".gitignore")
         if not os.path.isfile(ignore):
             with open(ignore, "w", encoding="utf-8") as handle:
@@ -564,8 +604,20 @@ class Runner:
             if not self.pause.is_set():
                 print("%s: %d test sessions to run, %d at a time." % (label, len(pending), self.opts.parallel),
                       flush=True)
-                with concurrent.futures.ThreadPoolExecutor(max_workers=self.opts.parallel) as pool:
+                pool = concurrent.futures.ThreadPoolExecutor(max_workers=self.opts.parallel)
+                try:
                     list(pool.map(lambda job: self.one(label, *job), pending))
+                except KeyboardInterrupt:
+                    STOP.set()
+                    stop_children()
+                    try:
+                        pool.shutdown(wait=True, cancel_futures=True)
+                    except TypeError:          # Python 3.8 has no cancel_futures
+                        pool.shutdown(wait=True)
+                    raise
+                pool.shutdown(wait=True)
+            if STOP.is_set():
+                raise KeyboardInterrupt
             if not self.pause.is_set():
                 left = [j for j in pending if not has_result(
                     result_path(self.opts.results, label, *j), self.tasks[j[0]]["hash"])]
@@ -582,6 +634,15 @@ class Runner:
 
 
 # ---------------------------------------------------------------- results and verdicts
+
+def read_manifest(results, label):
+    try:
+        with open(os.path.join(results, label, "tasks.manifest"), encoding="utf-8") as handle:
+            data = json.load(handle)
+            return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
 
 def load_results(results, label):
     folder = os.path.join(results, label)
@@ -676,8 +737,13 @@ def current(records, task):
     return [r for r in records.get(task["id"], []) if r.get("hash") == task["hash"]]
 
 
-def compare(tasks, before, after, base):
-    """Rows per task, the tasks that need extra runs, the worse ones and the skipped ones."""
+def compare(tasks, before, after, base, manifest=None):
+    """Rows per task, the tasks that need extra runs, the worse, skipped and incomplete ones.
+
+    A task is skipped when the before run used a different version of it, or never
+    had it (added since). It is incomplete when that run had this version but did
+    not finish it."""
+    manifest = manifest or {}
     rows, more, worse, skipped, incomplete = [], [], [], [], []
     for task in tasks:
         b, a = current(before, task), current(after, task)
@@ -685,10 +751,11 @@ def compare(tasks, before, after, base):
             incomplete.append(("after", task["id"]))
             continue
         if len(b) < base:
-            if before.get(task["id"]):
-                skipped.append(task["id"])          # the task changed since that run
-            else:
+            known = manifest.get(task["id"]) == task["hash"] or bool(b)
+            if known:
                 incomplete.append(("before", task["id"]))
+            else:
+                skipped.append(task["id"])
             continue
         if any(r["grade"].get("grader_failed") for r in a + b):
             raise SetupError("Task %s has a run the grader could not score. Delete that result file "
@@ -715,7 +782,8 @@ def cmd_check(opts, tasks):
     after = load_results(opts.results, opts.label)
     if not after:
         raise SetupError("No results for %s. Run `golden.py run %s` first." % (opts.label, opts.label))
-    rows, more, worse, skipped, incomplete = compare(tasks, before, after, base)
+    manifest = read_manifest(opts.results, before_label)
+    rows, more, worse, skipped, incomplete = compare(tasks, before, after, base, manifest)
     if incomplete:
         side = {s for s, _ in incomplete}
         names = ", ".join(i for _, i in incomplete)
@@ -729,7 +797,7 @@ def cmd_check(opts, tasks):
                 for rep in range(have + 1, base + EXTRA_REPS + 1)]
         Runner(opts, tasks).run_many(opts.label, jobs)
         after = load_results(opts.results, opts.label)
-        rows, more, worse, skipped, incomplete = compare(tasks, before, after, base)
+        rows, more, worse, skipped, incomplete = compare(tasks, before, after, base, manifest)
     if not rows:
         raise SetupError("No task could be compared between %s and %s." % (before_label, opts.label))
     print("\n%s against %s" % (opts.label, before_label))
@@ -744,7 +812,7 @@ def cmd_check(opts, tasks):
     if len(folders) > 1:
         print("  warning: the runs started in different folders: %s" % ", ".join(sorted(folders)))
     if skipped:
-        print("  not compared (task changed since %s): %s" % (before_label, ", ".join(skipped)))
+        print("  not compared (task new or changed since %s): %s" % (before_label, ", ".join(skipped)))
     failing = worse + [r[0]["id"] for r in rows if r[3] == "noisy"]
     if failing:
         print("WORSE: restore this change. Tasks: %s" % ", ".join(failing), flush=True)
@@ -803,7 +871,13 @@ def build_parser():
     return parser
 
 
+def on_term(signum, frame):
+    raise KeyboardInterrupt
+
+
 def main(argv=None):
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGTERM, on_term)
     parser = build_parser()
     opts = parser.parse_args(argv)
     if opts.command in ("run", "check") and not re.match(r"^[A-Za-z0-9_.-]+$", opts.label):
@@ -817,11 +891,13 @@ def main(argv=None):
         if opts.command == "check":
             return cmd_check(opts, tasks)
         return cmd_list(opts, tasks)
-    except Paused as limit:
-        print("PAUSED for the usage limit: %s\nRun the same command again after it resets; it "
-              "continues from its last result." % limit, flush=True)
+    except Paused as reason:
+        print("PAUSED: %s\nRun the same command again later; it continues from its last result."
+              % reason, flush=True)
         return PAUSED
     except KeyboardInterrupt:
+        STOP.set()
+        stop_children()
         print("Interrupted. Run the same command again; it continues from its last result.", flush=True)
         return PAUSED
     except SetupError as problem:

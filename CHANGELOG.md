@@ -31,16 +31,20 @@ v0.6.0 did not. This release keeps the full standard and adds what was missing.
   folder are blocked with a reason the model sees, and every decision is
   logged. The shell runs one plain read command at a time from a short list,
   with no shell operators, variables or wildcard options, so nothing can hide a
-  second command. Connected tools run only when their name reads as a lookup,
-  and their input is checked for statements that change data. Web reads still
-  run. It fails closed (`"onFailure": "block"`). Test sessions run with bypass
+  second command, and the hook pins the program to its full path so a shell
+  function or alias cannot swap it. `find` is not on the list (Claude Code's
+  own `find` accepts a delete action), and git runs only in the session's
+  folder, never in the scratch folder. Connected tools run only when their name
+  reads as a lookup, and their input is checked for statements that change
+  data. Web reads still run. It fails closed (`"onFailure": "block"`). Test sessions run with bypass
   permissions so reads never stall on a prompt nobody can answer, and a canary
   session must prove test mode active before any task runs.
 - **Grading from the log.** A second fresh session with no tools grades each
   run against its "done" line, from the tool log rather than the answer's own
   claims, with structured output. Every blocked call reaches the grader. A run
-  that was interrupted, never answered or could not be graded is never counted;
-  `check` refuses an incomplete run instead of deciding on part of it.
+  that was interrupted, never answered or could not be graded is never counted,
+  a run that times out twice counts as a fail, and `check` refuses an incomplete
+  run instead of deciding on part of it.
 - **Same login as daily use.** If `ANTHROPIC_API_KEY` is set and a Claude login
   exists, test sessions drop the key, so they run on the plan and keep the
   claude.ai connectors. `--use-api-key` keeps it.
@@ -56,9 +60,9 @@ v0.6.0 did not. This release keeps the full standard and adds what was missing.
 - **Merges keep the union of both roles' rules**, with contradictions kept at
   the stricter rule and reported. `update-crew` had no merge instructions before.
 - **Rule map and independent review for every change.** Each old line maps to
-  its new home or one of three reasons. The reviewer checks the map, contradictions
-  and self-breaking style rules, and flags unsourced lines rather than calling
-  them invented.
+  its new home or one of three reasons. The reviewer checks the map,
+  contradictions and self-breaking style rules, and flags unsourced lines
+  rather than calling them invented.
 - **The chief of staff can run the update.** `update-crew` no longer sets
   `disable-model-invocation`, so "update my crew" works from the main loop.
 - **Session-start notice.** The plugin ships a SessionStart hook. When the crew's

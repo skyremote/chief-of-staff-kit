@@ -11,7 +11,7 @@ HOOK = os.path.join(os.path.dirname(__file__), "..", "skills", "install-crew", "
                     "evals", "test-mode.py")
 
 
-def decide(tool, data, env_extra=None, cwd="/tmp", raw=None):
+def run_hook(tool, data, env_extra=None, cwd="/tmp", raw=None):
     env = dict(os.environ)
     env["CREW_TEST_MODE"] = "1"
     env.pop("CREW_TEST_ALLOW", None)
@@ -21,9 +21,13 @@ def decide(tool, data, env_extra=None, cwd="/tmp", raw=None):
     proc = subprocess.run([sys.executable, HOOK], input=payload, capture_output=True, text=True, env=env)
     assert proc.returncode == 0, proc.stderr
     if not proc.stdout.strip():
-        return "allow"
+        return "allow", None
     out = json.loads(proc.stdout)["hookSpecificOutput"]
-    return out["permissionDecision"]
+    return out["permissionDecision"], out.get("updatedInput")
+
+
+def decide(tool, data, env_extra=None, cwd="/tmp", raw=None):
+    return run_hook(tool, data, env_extra, cwd, raw)[0]
 
 
 class BashCommands(unittest.TestCase):
@@ -32,12 +36,19 @@ class BashCommands(unittest.TestCase):
 
     def test_plain_reads_run(self):
         for command in ["ls -la", "git log --oneline -5", "git diff HEAD~1", "git status",
-                        "git -C repo log", "git branch --show-current", "git remote -v",
+                        "git branch --show-current", "git remote -v",
                         "git tag --list", "git log --format='%h %s'", "gh pr view 12",
                         "gh pr view 12 --repo o/r", "gh api repos/o/r/pulls --jq '.[].title'",
-                        "find . -name '*.md'", "grep -rn TODO src", "cat README.md",
+                        "grep -rn TODO src", "cat README.md",
                         "echo 'hello world'", "wc -l notes.md"]:
             self.check(command, "allow")
+
+    def test_program_is_pinned_to_its_full_path(self):
+        decision, updated = run_hook("Bash", {"command": "git log -1", "description": "d"})
+        self.assertEqual(decision, "allow")
+        self.assertTrue(updated["command"].endswith(" log -1"))
+        self.assertTrue(updated["command"].split()[0].startswith("/"))
+        self.assertEqual(updated["description"], "d")
 
     def test_operators_and_expansions_are_refused(self):
         for command in ["echo done#; git push origin main", "ls;</dev/null rm -rf ~/x",
@@ -62,16 +73,21 @@ class BashCommands(unittest.TestCase):
                         "gh api -fbody=hi repos/o/r/issues/1/comments", "gh api graphql",
                         "gh pr view 1 --web", "curl -sX DELETE https://x", "curl https://x",
                         "rg --pre sh . file", "sort -o out a", "uniq a b", "tree -o f",
-                        "find . -delete", "find . -exec rm {} +", "find . -dele*", "rm -rf build",
+                        "find . -delete", "find . -name '*.md' -rm", "find . -name x",
+                        "find . -dele*", "rm -rf build", "git -C repo log", "git -C /tmp status",
+                        "gh pr view 12 -cw", "gh pr view 12 --web=true",
                         "python3 -c 1", "npm publish", "sudo ls", "ssh host", "date -s x",
                         "unterminated 'quote"]:
             self.check(command, "deny")
 
     def test_git_inside_scratch_is_refused(self):
         scratch = tempfile.mkdtemp()
+        os.makedirs(os.path.join(scratch, "repo"))
         env = {"CREW_TEST_SCRATCH": scratch}
         self.check("git -C %s/repo status" % scratch, "deny", env)
         self.check("git status", "deny", env, cwd=os.path.join(scratch, "repo"))
+        self.check("git status", "deny", env, cwd=os.path.join(scratch.upper() if os.path.exists(
+            scratch.upper()) else scratch, "repo"))
         self.check("git status", "allow", env, cwd="/tmp")
 
 
@@ -95,7 +111,8 @@ class ConnectedTools(unittest.TestCase):
                    "mcp__gh__merge_pull_request", "mcp__x__sendMessage", "mcp__x__task_add",
                    "mcp__postgres__query", "mcp__mysql__mysql_query", "mcp__fetch__fetch",
                    "mcp__x__verify_phone_number", "mcp__x__respond_to_thread", "mcp__x__mark_as_read",
-                   "mcp__x__get_or_create_user"]
+                   "mcp__x__get_or_create_user", "mcp__linear__save_view", "mcp__x__export_view",
+                   "mcp__x__sort_list", "mcp__x__store_search"]
         for name in allowed:
             self.assertEqual(decide(name, {}), "allow", name)
         for name in blocked:
@@ -111,6 +128,22 @@ class ConnectedTools(unittest.TestCase):
         self.assertEqual(decide("mcp__db__query", {"sql": "select * from users"}, env), "allow")
         self.assertEqual(decide("mcp__db__query", {"sql": "DELETE FROM users"}, env), "deny")
         self.assertEqual(decide("mcp__db__query", {"sql": "select 1; drop table users"}, env), "deny")
+        for sql in ["/* x */ DELETE FROM users", "-- x\nDELETE FROM users",
+                    "WITH t AS (SELECT 1) DELETE FROM users", "UPDATE users u SET a = 1",
+                    "INSERT IGNORE INTO t VALUES (1)", "COPY (SELECT 1) TO PROGRAM 'x'",
+                    "DO $$ BEGIN END $$", "ALTER SYSTEM SET x = 1", "DROP FUNCTION f",
+                    "CREATE OR REPLACE FUNCTION f() RETURNS int", "DELETE users WHERE 1=1",
+                    "SELECT * FROM t FOR UPDATE", "SELECT a INTO b FROM c",
+                    "EXPLAIN ANALYZE DELETE FROM t"]:
+            self.assertEqual(decide("mcp__db__query", {"sql": sql}, env), "deny", sql)
+        self.assertEqual(decide("mcp__db__query", {"sql": "SELECT name FROM users WHERE id = 3"}, env),
+                         "allow")
+        for data in [{"httpMethod": "POST"}, {"requestMethod": "DELETE"}, {"method": ["POST"]}]:
+            self.assertEqual(decide("mcp__x__search_web", data), "deny", data)
+        deep = "x"
+        for _ in range(12):
+            deep = {"a": deep}
+        self.assertEqual(decide("mcp__x__search_web", deep), "deny")
 
     def test_allow_file(self):
         handle = tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False)

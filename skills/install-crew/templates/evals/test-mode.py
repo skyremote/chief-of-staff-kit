@@ -13,8 +13,9 @@ nothing may be sent, changed or published, so it allows only calls that read:
   - Write and Edit inside the run's scratch folder (CREW_TEST_SCRATCH)
   - one plain read command at a time in the shell: no shell operators at all
     (no ; & | < > ( ) { } $ ` ! or new lines), from a short list (ls, cat, grep,
-    find, git log/diff/show/status, gh pr view...), with the options that
-    write or run programs refused
+    git log/diff/show/status, gh pr view...), with the options that write or
+    run programs refused. The hook rewrites the program to its full path, so
+    a shell function or alias cannot swap it for another program after the check
   - connected (MCP) tools whose name reads as a plain lookup (get, list,
     search, read...), holds no write word (send, create, update, delete...)
     and carries no SQL write or non-GET method in its input
@@ -35,6 +36,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import sys
 import time
 
@@ -60,10 +62,8 @@ PLAIN_READERS = {
     "ls", "cat", "head", "tail", "wc", "grep", "egrep", "fgrep", "pwd", "echo",
     "printf", "which", "stat", "du", "df", "diff", "cmp", "comm", "nl",
     "basename", "dirname", "realpath", "readlink", "uname", "whoami",
-    "shasum", "sha256sum", "md5", "find", "git", "gh",
+    "shasum", "sha256sum", "md5", "git", "gh",
 }
-
-FIND_UNSAFE = ("-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fls")
 
 GIT_READ = {"status", "log", "diff", "show", "blame", "ls-files", "rev-parse",
             "describe", "shortlog", "branch", "tag", "remote"}
@@ -87,16 +87,18 @@ WRITE_WORDS = {
     "stop", "kill", "apply", "approve", "reject", "submit", "mark",
     "subscribe", "unsubscribe", "share", "revoke", "grant", "assign", "close",
     "enable", "disable", "rename", "duplicate", "attach", "import", "restore",
-    "reset", "sync", "commit", "fork", "clear", "purge", "drop", "mutate",
-    "compose", "forward", "mute", "ban", "follow", "like", "register", "buy",
-    "purchase", "sell", "confirm", "accept", "decline", "resolve", "dismiss",
-    "snooze", "trigger", "invoke", "notify", "broadcast", "install",
-    "uninstall", "provision", "scale", "restart", "reboot", "shutdown",
-    "rollback", "revert", "replace", "organise", "organize", "tidy", "align",
-    "distribute", "launch", "sign", "signup", "login", "logout", "authorize",
-    "authorise", "connect", "disconnect", "enroll", "enrol", "vote", "toggle",
-    "increment", "decrement", "claim", "withdraw", "deposit", "redeem", "sms",
-    "dial", "nudge", "remind", "alert",
+    "reset", "sync", "save", "store", "commit", "fork", "clear", "purge",
+    "drop", "mutate", "generate", "compose", "forward", "mute", "block", "ban",
+    "pin", "unpin", "star", "follow", "like", "log", "register", "tag", "untag",
+    "order", "buy", "purchase", "sell", "confirm", "accept", "decline",
+    "resolve", "dismiss", "snooze", "trigger", "invoke", "notify", "broadcast",
+    "install", "uninstall", "provision", "scale", "restart", "reboot",
+    "shutdown", "rollback", "revert", "replace", "download", "export", "sort",
+    "organise", "organize", "tidy", "align", "distribute", "lock", "unlock",
+    "record", "capture", "open", "launch", "sign", "signup", "login", "logout",
+    "authorize", "authorise", "connect", "disconnect", "enroll", "enrol",
+    "vote", "toggle", "increment", "decrement", "claim", "withdraw", "deposit",
+    "redeem", "sms", "dial", "nudge", "remind", "alert",
 }
 
 READ_WORDS = {
@@ -105,12 +107,20 @@ READ_WORDS = {
     "stats", "history", "diff", "compare",
 }
 
-SQL_WRITE = re.compile(
-    r"(^|;)\s*(insert\s+into|update\s+\S+\s+set|delete\s+from|drop\s+(table|database|schema|"
-    r"index|view|user|role)|alter\s+(table|database|schema|user|role)|create\s+(table|database|"
-    r"schema|index|view|user|role)|truncate\s+(table\s+)?\S+|grant\s+\S+|revoke\s+\S+|merge\s+into|"
-    r"replace\s+into|upsert\s+into|copy\s+\S+\s+(from|to)|call\s+\S+\s*\(|exec(ute)?\s+\S+)",
+SQL_START = re.compile(
+    r"^\s*(select|show|describe|desc|explain|with|insert|update|delete|drop|alter|create|"
+    r"truncate|grant|revoke|merge|replace|upsert|copy|call|exec|execute|do|set|begin|"
+    r"commit|rollback|vacuum|attach|detach|pragma|load|lock|unlock|rename|comment|"
+    r"analyze|analyse|refresh|reindex|cluster|prepare|declare|use|kill|optimize|repair)\b",
     re.I)
+SQL_SHAPE = re.compile(r"\b(from|into|table|set|where|values|function|procedure|trigger|index|"
+                       r"view|schema|database|user|role|column|constraint|sequence|extension|"
+                       r"system|begin)\b|;|--|/\*|\(|\$\$", re.I)
+SQL_READ = re.compile(r"^\s*(select|show|describe|desc|explain)\b", re.I)
+SQL_CHANGE = re.compile(r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|merge|"
+                        r"replace|upsert|copy|call|exec|execute|set|vacuum|attach|detach|pragma|"
+                        r"into|analyze|analyse|lock|load|do)\b", re.I)
+SQL_COMMENTS = re.compile(r"--[^\n]*|/\*.*?\*/", re.S)
 
 
 class Deny(Exception):
@@ -145,24 +155,36 @@ def words_of_command(command):
     return words
 
 
-def check_find(args):
-    if any(a.startswith(FIND_UNSAFE) for a in args):
-        raise Deny("find would delete files or run a program")
+def same_tree(path, root):
+    """True when path is root or inside it, by file identity, not by spelling."""
+    try:
+        target = os.stat(root)
+    except OSError:
+        return False
+    current = os.path.realpath(path)
+    while True:
+        try:
+            info = os.stat(current)
+            if (info.st_dev, info.st_ino) == (target.st_dev, target.st_ino):
+                return True
+        except OSError:
+            pass
+        parent = os.path.dirname(current)
+        if parent == current:
+            return False
+        current = parent
 
 
 def check_git(args, cwd, scratch):
-    i, where = 0, cwd
+    i = 0
     while i < len(args) and args[i].startswith("-"):
-        if args[i] == "-C" and i + 1 < len(args):
-            where = os.path.join(where or os.getcwd(), os.path.expanduser(args[i + 1]))
-            i += 2
-        elif args[i] == "--no-pager":
-            i += 1
-        else:
-            raise Deny("git option %s is not allowed in a test run" % args[i])
+        if args[i] != "--no-pager":
+            raise Deny("git option %s is not allowed in a test run; git runs only in the "
+                       "session's folder" % args[i])
+        i += 1
     if i >= len(args):
         raise Deny("git with no command")
-    if scratch and inside(where, scratch, cwd):
+    if scratch and same_tree(cwd, scratch):
         raise Deny("git cannot run inside the scratch folder")
     sub, rest = args[i], args[i + 1:]
     if sub not in GIT_READ:
@@ -191,7 +213,8 @@ def check_git(args, cwd, scratch):
 
 def check_gh(args):
     if len(args) >= 2 and (args[0], args[1]) in GH_READ:
-        if any(a in ("-w", "--web") for a in args[2:]):
+        if any(a.startswith("--web") or (a.startswith("-") and not a.startswith("--") and "w" in a)
+               for a in args[2:]):
             raise Deny("gh --web opens a browser")
         return
     if args and args[0] == "api":
@@ -223,12 +246,17 @@ def check_bash(command, cwd, scratch):
         raise Deny("`%s` is not on the read-only list" % name)
     if any(a.startswith("-") and any(c in a for c in "*?[") for a in args):
         raise Deny("an option with a wildcard cannot be checked")
-    if name == "find":
-        check_find(args)
-    elif name == "git":
+    if name == "git":
         check_git(args, cwd, scratch)
     elif name == "gh":
         check_gh(args)
+    program = shutil.which(name)
+    if not program or (scratch and same_tree(program, scratch)):
+        raise Deny("`%s` was not found as a program" % name)
+    body = command.lstrip()
+    if not body.startswith(name) or (len(body) > len(name) and not body[len(name)].isspace()):
+        raise Deny("the command could not be read")
+    return shlex.quote(program) + body[len(name):]
 
 
 def words_of_tool(tool_name):
@@ -237,31 +265,37 @@ def words_of_tool(tool_name):
     return [w.lower() for w in re.split(r"[_\-\s.:/]+", spaced) if w]
 
 
-def strings_in(value, depth=0):
-    if depth > 6:
-        return
+def strings_in(value, key=None, depth=0):
+    if depth > 8:
+        raise Deny("the input is nested too deeply to check")
     if isinstance(value, str):
-        yield None, value
+        yield key, value
     elif isinstance(value, dict):
-        for key, item in value.items():
-            if isinstance(item, str):
-                yield str(key), item
-            else:
-                for pair in strings_in(item, depth + 1):
-                    yield pair
+        for name, item in value.items():
+            for pair in strings_in(item, str(name), depth + 1):
+                yield pair
     elif isinstance(value, list):
         for item in value:
-            for pair in strings_in(item, depth + 1):
+            for pair in strings_in(item, key, depth + 1):
                 yield pair
+
+
+def sql_changes_data(text):
+    plain = SQL_COMMENTS.sub(" ", text or "")
+    if not SQL_START.search(plain) or not SQL_SHAPE.search(text or ""):
+        return bool(re.search(r";\s*(insert|update|delete|drop|alter|create|truncate)\b", plain, re.I))
+    body = plain.strip().rstrip(";")
+    if ";" in body or not SQL_READ.search(body):
+        return True
+    return bool(SQL_CHANGE.search(body))
 
 
 def check_mcp_input(data):
     for key, text in strings_in(data):
-        if key and key.lower() in ("method", "http_method", "verb") and \
-                text.strip().upper() not in ("GET", "HEAD", ""):
-            raise Deny("a %s request would change something" % text.strip().upper())
-        if SQL_WRITE.search(text or ""):
-            raise Deny("the input holds a statement that changes data")
+        if key and "method" in key.lower() and text.strip().upper() not in ("GET", "HEAD", ""):
+            raise Deny("a %s request would change something" % text.strip().upper()[:20])
+        if sql_changes_data(text):
+            raise Deny("the input holds a statement that could change data")
 
 
 def allow_list():
@@ -285,8 +319,9 @@ def decide(event):
         raise Deny("it writes a real file; writes are allowed only under %s"
                    % (scratch or "the scratch folder"))
     if tool == "Bash":
-        check_bash(str(data.get("command", "")), cwd, scratch)
-        return
+        updated = dict(data)
+        updated["command"] = check_bash(str(data.get("command", "")), cwd, scratch)
+        return updated
     if tool == "AskUserQuestion":
         raise Deny("nobody can answer in a test run; put the question in your answer")
     if tool.startswith("mcp__"):
@@ -333,8 +368,15 @@ def main():
             raise Deny("the hook input was not an object")
         tool = str(event.get("tool_name") or "")
         data = event.get("tool_input") or {}
-        decide(event)
+        updated = decide(event)
         log({"t": time.time(), "tool": tool, "decision": "allow", "input": short(data)})
+        if updated is not None:
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "allow",
+                "permissionDecisionReason": "Test mode: one plain read command, run by full path.",
+                "updatedInput": updated,
+            }}))
     except Deny as blocked:
         log({"t": time.time(), "tool": tool, "decision": "deny", "why": str(blocked), "input": short(data)})
         deny(tool, str(blocked))

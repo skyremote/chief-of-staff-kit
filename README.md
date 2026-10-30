@@ -4,9 +4,9 @@
 plans the work, does the work and keeps the context. Your divisions and crafts are
 **skills** it opens when it needs them, three **helpers** run in their own window
 when a separate context changes the result, **hooks** hold the actions you never
-want taken without a yes, and **ten golden tasks** tell you whether a change
-helped. A short interview fits all of it to your work. No two installs look the
-same.
+want taken without a yes, and **golden tasks**, run for you in a test mode where
+nothing is sent or changed, tell you whether a change helped. A short interview
+fits all of it to your work. No two installs look the same.
 
 ![chief-of-staff-kit v0.6.0: the chief of staff as one main loop, with division and craft skills it opens when needed, three helpers in a fresh window, own-context skills, hook gates and golden tasks](assets/hero.jpg)
 
@@ -33,7 +33,7 @@ kit. It needs no BluPlai account, and changes to the board appear there live.
   own-context skills web-build · video-edit · course-publish · content-engine   ← run in their own context
   helpers            code-reviewer · verifier · researcher                       ← fresh window
   hooks              gates on your irreversible actions (a broken gate blocks too)
-  evals              golden-tasks.md: ten tasks, run twice before and after any change
+  evals              golden-tasks.md + golden.py: real tasks, run in test mode before and after any change
 ```
 
 A **division** is whatever unit you run: a business, a department, a team, a
@@ -51,7 +51,7 @@ voice, filing, open work) only when the work touches it.
 | **verifier** | Drives the browser or app, knows only the user flow | Same reason: it checks what a user sees, not what was meant |
 | **researcher** | Clean-window research helper | It needs nothing from the main loop, and its raw reading stays out |
 | **Hook gates** | PreToolUse hooks with `"onFailure": "block"` | Hard rules in prose get forgotten; a hook runs every time |
-| **golden-tasks.md** | Ten tasks with "done" lines | So "this is better" is a score, not an opinion |
+| **golden-tasks.md** | Real tasks with "done" lines, run by `golden.py` in test mode | So "this is better" is a score, not an opinion |
 
 ## Why one loop
 
@@ -136,19 +136,26 @@ cloud sessions load extensions differently; check those surfaces separately.
 /chief-of-staff-kit:update-crew
 ```
 
-Updating the plugin does not rewrite your crew. **If you run a v0.5 crew**,
-`update-crew` offers the migration to one loop and does it the measured way:
+Updating the plugin does not rewrite your crew. When the kit is newer than your
+crew, each new session says so in one line. Then tell your chief of staff
+**`update my crew`** (or run the command above). You approve one plan; the rest
+runs by itself and reports at the end:
 
-1. **Audit** every agent: fold (becomes a skill), merge (two roles that always
-   run together), call as a tool (keeps its own context, returns a compact
-   result) or keep (its context must differ).
+1. **One plan, one yes.** It audits every agent (fold into a skill, merge two
+   roles that always run together, call as a tool, or keep), drafts your golden
+   tasks if you have none, proposes any missing hook gates and shows the size of
+   the run. Nothing is written before your yes.
 2. **Back up** the whole crew, with a `RESTORE.md`, before the first change.
-3. **Baseline** your ten golden tasks, twice.
-4. **Fold one role at a time,** re-run the tasks twice, and keep the change only
-   if it scores at least as well. Otherwise that role is restored.
+3. **Baseline** the golden tasks in test mode: every task twice, each in a fresh
+   session, graded against its "done" line.
+4. **One role at a time:** write it (a merge keeps the union of both roles'
+   rules), map every old rule to its new home, have an independent reviewer
+   check the map, run the tasks again and keep the change only if the check says
+   it holds. Otherwise that role is restored from the backup.
 
-You can stop at any point; a crew with some roles folded is fine. You can also
-stay on agents: the updater still applies the current frontmatter rules. For
+A crew with some roles folded is fine. You can also stay on agents: the updater
+still applies the current frontmatter rules. If your plan's usage limit stops a
+run, it continues from its last result after the reset. For
 larger agent systems, Anthropic's
 [single-agent-loop-kit](https://github.com/anthropics/single-agent-loop-kit)
 runs the same audit with scripts.
@@ -166,6 +173,23 @@ To configure Anthropic's advisor primitive after updating, run:
 ```text
 /chief-of-staff-kit:advisor
 ```
+
+### Golden tasks and test mode
+
+`golden.py` runs each golden task as a real `claude -p` session of your chief of
+staff, with `test-mode.py` as a hook. Reads run normally. Sends, pushes,
+payments, posts, connected tools that change things, and writes outside a
+scratch folder are blocked before they run, and the model is told to say what it
+would have done. The shell runs one plain read command at a time (no pipes,
+redirects or variables), connected tools run only when their name reads as a
+lookup, and web reads still run. A canary session proves the hook is active before any task
+runs; if it is not, nothing runs. A second session with no tools grades each
+answer against its "done" line, using the tool log rather than the answer's own
+claims. `golden.py check` compares task by task with the last kept run, reruns a
+task four more times when it failed in only one run, and says HOLDS or WORSE.
+Results stay in `evals/results/`, which is git-ignored because transcripts can
+hold private text. The runner drives Claude Code only; on Codex, run the tasks
+by hand.
 
 ### Manual install (no marketplace)
 
@@ -199,6 +223,8 @@ work with either shape. Run the golden tasks against both before you settle.
 
 ```
 .claude-plugin/        plugin + marketplace manifests
+hooks/hooks.json       session-start notice when your crew is older than the kit
+scripts/               the notice script
 skills/install-crew/
   SKILL.md             the installer (interview → plan → render → test)
   templates/
@@ -206,15 +232,17 @@ skills/install-crew/
     skills/            division skill, craft skills, own-context skills
     agents/            code-reviewer, verifier, researcher
     hooks/             example gate scripts
-    evals/             golden-tasks.md
+    evals/             golden-tasks.md, golden.py (runner), test-mode.py (safety hook)
     legacy/            the v0.5 agent templates, unchanged
   references/          how to render for Claude Code and Codex
 skills/update-crew/    in-place updater and v0.5 → one-loop migration
 skills/advisor/        advisor adoption and verification runbook
 assets/                README art
+tests/                 python3 -m unittest discover tests (no model calls)
 ```
 
-Everything is Markdown, plus three POSIX shell gate scripts. There is no build
+Everything is Markdown, plus POSIX shell scripts for the gates and the notice,
+and two standard-library Python scripts for the golden tasks. There is no build
 step; the installer follows
 [`skills/install-crew/SKILL.md`](skills/install-crew/SKILL.md).
 

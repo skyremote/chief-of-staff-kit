@@ -13,6 +13,10 @@ gates in settings, a golden-task file and a team README.
 | **Project** | `<ws>/.claude/agents/` | `<ws>/.claude/skills/` | `<ws>/.claude/hooks/` | `<ws>/.claude/settings.json` |
 | **Global** | `~/.claude/agents/` | `~/.claude/skills/` | `~/.claude/hooks/` | `~/.claude/settings.json` |
 
+The golden tasks and their runner go to an `evals/` folder in the same scope:
+`<ws>/.claude/evals/` or `~/.claude/evals/` (§8). The version marker
+`crew-kit-version` sits in `<ws>/.claude/` or `~/.claude/`.
+
 Pick one scope for the whole crew. Project scope suits a crew tied to one
 workspace and can be committed with it; global scope suits a personal crew used
 from any directory. If a project and a global item share a name, Claude Code
@@ -237,6 +241,11 @@ printf '%s' '{"tool_name":"Bash","cwd":"/tmp/gate-test","tool_input":{"command":
 
 Then, in the new session, confirm one live block during the first drive.
 
+**Test mode is not a gate.** `golden.py` adds `test-mode.py` to its own test
+sessions through `claude -p --settings`; never merge it into a settings file.
+Your gates still run in those sessions, but test mode blocks first, so the
+direct script test above is what proves each gate.
+
 **Other irreversible actions** from the interview (writing to a live database,
 payments, deploys, deletions) use `gate-confirm.sh "<label>" ask|deny` behind a
 matcher for the tool that performs them, for example the database MCP server's
@@ -253,9 +262,19 @@ follow the user's lead and ask if unsure."
 
 ## 8. Golden tasks, README and QUICKSTART
 
-Write `golden-tasks.md`, `README.md` (from `team-readme-template.md`, filling
-`{{ROSTER_TABLE}}`) and `QUICKSTART.md` into the agents directory. The roster
-table has one row per installed item:
+Copy `templates/evals/golden.py` and `templates/evals/test-mode.py` into the
+evals folder (§1) and write the approved `golden-tasks.md` beside them. Fill
+`{{GOLDEN_TASKS_PATH}}` with that file's path. The runner keeps results in
+`evals/results/` and writes a `.gitignore` there on first use, because test
+transcripts can hold private text. A project crew committed to git must never
+commit that folder. If a connected tool only reads but test mode blocks it by
+name, list its exact tool name in `evals/test-mode-allow.txt`.
+
+Write the kit version from the plugin manifest into `crew-kit-version` (§1).
+
+Write `README.md` (from `team-readme-template.md`, filling `{{ROSTER_TABLE}}`)
+and `QUICKSTART.md` into the agents directory. The roster table has one row
+per installed item:
 
 ```markdown
 | Name | Kind | Runs | Use when |
@@ -283,7 +302,10 @@ new session (or run `/reload-skills` and `/reload-plugins`), then run
 - [ ] Settings backed up; only `hooks` (and `agent` if chosen) changed; JSON parses.
 - [ ] Each gate tested with a matching and a non-matching input.
 - [ ] No real names, brands, domains, emails or personal paths in shipped text.
-- [ ] README, QUICKSTART and `golden-tasks.md` written; user told to restart.
+- [ ] `evals/` holds `golden-tasks.md`, `golden.py` and `test-mode.py`;
+      `python3 evals/golden.py list` runs.
+- [ ] `crew-kit-version` written.
+- [ ] README and QUICKSTART written; user told to restart.
 
 ---
 

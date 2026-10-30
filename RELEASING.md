@@ -10,6 +10,10 @@ release cut.
 
 ## Checklist
 
+0. **Run the tests**: `python3 -m unittest discover tests`. They make no
+   model calls. A change to `golden.py` or `test-mode.py` also needs one live
+   smoke run on a throwaway crew before release.
+
 1. **Bump BOTH manifests** to the new version — they must always agree:
    - `.claude-plugin/plugin.json` → `"version"`
    - `.claude-plugin/marketplace.json` → `"metadata"."version"`

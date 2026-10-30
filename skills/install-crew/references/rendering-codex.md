@@ -16,6 +16,12 @@ matter here: skills have no `context: fork`, hooks have no `ask` and no
 | Hook gates | `<ws>/.codex/hooks.json` + `<ws>/.codex/hooks/*.sh` | `~/.codex/hooks.json` + `~/.codex/hooks/*.sh` |
 | Golden tasks, README, QUICKSTART | next to the agents | next to the agents |
 
+The golden-task runner (`golden.py`) drives Claude Code only. On Codex, write
+`golden-tasks.md` and run the tasks by hand, twice before and twice after a
+change, each in a fresh session. Test mode cannot be made safe on Codex yet:
+its hooks let an action through when they fail, and its sandbox covers only
+shell commands, not connected tools.
+
 Never overwrite an existing `AGENTS.md`, `hooks.json` or `config.toml`. Merge a
 clearly headed, versioned section or entry and preserve everything else. Back up
 each file first.

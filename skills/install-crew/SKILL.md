@@ -19,7 +19,7 @@ helpers and hard gates**, fitted to the person installing it.
   own-context skills web-build · video-edit · course-publish · content-engine   (context: fork)
   helper agents     code-reviewer · verifier · researcher
   hooks             gates on the user's irreversible actions (onFailure: block)
-  evals             golden-tasks.md: ten tasks, run twice before and after any change
+  evals             golden-tasks.md + golden.py: real tasks, run in test mode before and after any change
 ```
 
 A **division** is whatever unit the user runs: a business, a department, a team,
@@ -42,7 +42,9 @@ placeholder and say so.
   inline, and four that run in their own context (`context: fork`).
 - `templates/agents/`: `code-reviewer`, `verifier`, `researcher`.
 - `templates/hooks/`: three example gate scripts.
-- `templates/evals/golden-tasks.md`: the eval starter.
+- `templates/evals/`: `golden-tasks.md` (the eval starter), `golden.py` (the
+  runner) and `test-mode.py` (the hook that blocks every send, push and live
+  write during a test session).
 - `templates/legacy/`: the v0.5 orchestrator, division-lead, specialist and comms
   agents, for users who ask for the old shape.
 - `references/rendering-claude-code.md`, `references/rendering-codex.md`,
@@ -60,8 +62,9 @@ Ask which the user runs (offer both):
 - **Claude Code** → `references/rendering-claude-code.md`. Check the version with
   `claude --version`: hook gates with `onFailure` need 2.1.295 or later, the
   per-call `effort` parameter 2.1.292, and forks on by default in `-p`, the SDK,
-  desktop and VS Code 2.1.302. Recommend updating if older; the crew still
-  installs, but say which parts will not work.
+  desktop and VS Code 2.1.302. The golden-task runner needs 2.1.295 or later
+  and `python3`. Recommend updating if older; the crew still installs, but say
+  which parts will not work.
 - **Codex** → `references/rendering-codex.md` (skills, custom-agent TOML, root
   `AGENTS.md`, hooks without `ask` or `onFailure`).
 - **Both** → render each from the same answers.
@@ -137,7 +140,9 @@ Before writing anything, show:
   file it goes into, with the backup path. Show only the block you add, never
   the rest of the settings file, which may hold secrets;
 - any name collision with an existing skill or agent, and the rename you propose;
-- the front-door change, if chosen.
+- the front-door change, if chosen;
+- the golden tasks you drafted (Step 4.7), so the user can correct any "done"
+  line in the same reply.
 
 Wait for a yes. This is the only gate; once confirmed, write everything.
 
@@ -161,11 +166,21 @@ Follow the rendering reference. In order:
 6. **Hook gates**: back up the settings file, copy the chosen gate scripts,
    `chmod +x`, merge the approved hooks block, parse the JSON, then test each
    gate as the rendering reference describes.
-7. **Golden tasks**: write `golden-tasks.md`. Offer to draft the ten tasks from
-   the interview; the user must correct each "done" line.
+7. **Golden tasks**: copy `templates/evals/golden.py` and `test-mode.py` into
+   the evals folder (rendering reference §8) and write the approved
+   `golden-tasks.md` beside them. Draft the tasks before Step 3 from the
+   interview, following the template: ten everyday tasks, one per chain, one per
+   hard rule and gated action, and one failure task, with every "done" line
+   written for test mode (sends, pushes and writes are blocked, so "done"
+   describes the answer and the attempt). The Step 3 yes approves them.
 8. **Team README and QUICKSTART** from `references/team-readme-template.md`.
 9. **Grep every written file for a leftover `{{`** and parse every frontmatter
    block. A surviving token is a bug; fix it before finishing.
+10. **Version marker**: write the kit version (`version` in the plugin's
+    `.claude-plugin/plugin.json`, or in the clone's manifest for a hand-copied
+    install) into `<scope>/crew-kit-version`: the bare version, such as `0.7.0`,
+    on one line. The plugin's session-start check
+    reads it and says one line when a newer kit is installed.
 
 For the legacy shape, follow "Legacy shape" at the end of the rendering
 reference instead of steps 1 to 5.
@@ -208,13 +223,16 @@ In the new session:
    call `code-reviewer` or `researcher` and keep the conversation.
 4. **Gate:** ask for one gated action in a safe form (for example, a push to a
    protected branch in a throwaway repository). The gate must stop it.
-5. **Baseline:** run the golden tasks twice and record the result, so the next
-   change has something to beat.
+5. **Baseline:** run `python3 <scope>/evals/golden.py run baseline --cwd
+   <workspace>` in the background. It proves test mode with a canary, runs
+   every task twice in fresh sessions and grades each run, so the next change
+   has something to beat.
 
 Leave a `QUICKSTART.md` next to the team README covering: the main loop does the
 work; skills load on demand; the three helpers and when each is used; which
-actions are gated and how to change a gate; how to run the golden tasks; and the
-update path (`update-crew`).
+actions are gated and how to change a gate; how to run the golden tasks
+(`golden.py run`, `golden.py check`); and the update path (ask the chief of
+staff to update the crew, which runs `update-crew`).
 
 ---
 

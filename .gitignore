@@ -8,3 +8,6 @@ Thumbs.db
 # scratch
 /tmp/
 *.log
+
+# python
+__pycache__/

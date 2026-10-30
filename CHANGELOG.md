@@ -1,5 +1,83 @@
 # Changelog
 
+## v0.7.0 — 2026-10-30
+
+"It just works." Measuring a change to the crew no longer means typing tasks into
+fresh sessions and scoring them by hand. A runner does it in a safe test mode,
+an update asks once and then runs by itself, and the checks now aim at the way
+migrations actually break: rules lost in a merge.
+
+Why: the v0.6.0 process (ten golden tasks, two runs before and after each
+change, one role at a time) matches Anthropic's guidance, but run by hand it
+costs 20 fresh sessions per role, so a 20-role crew needs over 400 sessions
+scored by a person. A user's migration report showed what happens next: people
+skip part of it. The same report found the two real defects (two rules dropped
+when two agents merged into one skill, and a house-style rule that broke itself)
+through an independent review, not through the golden tasks. Anthropic's
+article also asks for a task "for every rule the agent must not break", which
+v0.6.0 did not. This release keeps the full standard and adds what was missing.
+
+- **Golden-task runner (`golden.py`).** `run <label>` runs every task twice,
+  each in a fresh `claude -p` session of the main loop, three at a time.
+  `check <label>` compares task by task with the last kept run, reruns a task
+  4 more times when it failed in only one run, and prints HOLDS (exit 0) or
+  WORSE (exit 1). After the extra runs a task holds within 0.2 of its old pass
+  rate. Runs are resumable: if the plan's usage limit stops a run it exits 75,
+  and the same command continues from its last result (`--wait-on-limit` waits
+  by itself). Standard-library Python, Claude Code 2.1.295 or later.
+- **Test mode (`test-mode.py`).** A PreToolUse hook passed only to test sessions
+  through `--settings`, never merged into settings. Reads run; sends, pushes,
+  payments, connected tools that change things, and writes outside a scratch
+  folder are blocked with a reason the model sees, and every decision is
+  logged. The shell runs one plain read command at a time from a short list,
+  with no shell operators, variables or wildcard options, so nothing can hide a
+  second command, and the hook pins the program to its full path so a shell
+  function or alias cannot swap it. `find` is not on the list (Claude Code's
+  own `find` accepts a delete action), and git runs only in the session's
+  folder, never in the scratch folder. Connected tools run only when their name
+  reads as a lookup, and their input is checked for statements that change
+  data. Web reads still run. It fails closed (`"onFailure": "block"`). Test sessions run with bypass
+  permissions so reads never stall on a prompt nobody can answer, and a canary
+  session must prove test mode active before any task runs.
+- **Grading from the log.** A second fresh session with no tools grades each
+  run against its "done" line, from the tool log rather than the answer's own
+  claims, with structured output. Every blocked call reaches the grader. A run
+  that was interrupted, never answered or could not be graded is never counted,
+  a run that times out twice counts as a fail, and `check` refuses an incomplete
+  run instead of deciding on part of it.
+- **Same login as daily use.** If `ANTHROPIC_API_KEY` is set and a Claude login
+  exists, test sessions drop the key, so they run on the plan and keep the
+  claude.ai connectors. `--use-api-key` keeps it.
+- **Golden tasks cover rules and failures.** The template now asks for one task
+  per hard rule and gated action and one failure task, with "done" lines
+  written for test mode, plus a Kind column.
+- **One plan, one yes.** `update-crew` shows the role verdicts, the drafted
+  golden tasks, any missing hook gates and the size of the run in one message.
+  After the yes it backs up, sets the baseline, changes one role at a time and
+  keeps or restores each one on the golden-task verdict, then reports. A
+  `PROGRESS.md` in the backup lets an interrupted update continue where it
+  stopped.
+- **Merges keep the union of both roles' rules**, with contradictions kept at
+  the stricter rule and reported. `update-crew` had no merge instructions before.
+- **Rule map and independent review for every change.** Each old line maps to
+  its new home or one of three reasons. The reviewer checks the map,
+  contradictions and self-breaking style rules, and flags unsourced lines
+  rather than calling them invented.
+- **The chief of staff can run the update.** `update-crew` no longer sets
+  `disable-model-invocation`, so "update my crew" works from the main loop.
+- **Session-start notice.** The plugin ships a SessionStart hook. When the crew's
+  `crew-kit-version` is older than the plugin, or missing, each new session says
+  so in one line. Install and update write the marker.
+- **Stopping when stuck.** The main loop says what blocks it after two failed
+  tries, with one question: folded skills have no other agent to report to.
+- **Gates are proved by their script test.** When test mode and a gate both
+  deny one call, Claude sees one reason, so gate tasks now prove that the session
+  stops and tries no other route, and the direct gate test proves the gate.
+- **Smaller fixes.** `ToolSearch` and newer built-ins in a kept agent's `tools:`
+  list count as current. The golden-tasks file moves to `<scope>/evals/` with
+  its runner. Tests for both scripts ship in `tests/` (no model calls), and
+  `RELEASING.md` runs them first.
+
 ## v0.6.0 — 2026-10-26
 
 "One loop." A fresh install no longer builds an org chart of agents. It builds

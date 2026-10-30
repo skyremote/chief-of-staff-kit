@@ -56,8 +56,13 @@ script in the hooks directory, then start a new session.
 
 ## Changing the crew
 
-Change one thing at a time, and run the golden tasks twice before and twice
-after. Keep a change only if it scores at least as well. To add a division,
+Change one thing at a time and measure it with the golden tasks. From the
+workspace, run `python3 <evals>/golden.py run baseline` once. After each change,
+run `python3 <evals>/golden.py run <new-label>`, then `python3
+<evals>/golden.py check <new-label>`. Each task runs twice in a fresh session in
+test mode, where every send, push and live write is blocked. Keep a change only
+if the check says it holds. To bring the whole crew up to a new kit version, ask
+the chief of staff to update the crew. To add a division,
 copy an existing division skill folder and fill it in; to add a craft, add a
 skill. Add a helper agent only when the main loop's context would hurt the
 result, and the golden tasks show the helper does better.

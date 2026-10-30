@@ -42,9 +42,24 @@ does the work, with the knowledge it needs as skills. The reasoning:
 - **Hard rules are hooks.** A rule the model must never break belongs in a
   PreToolUse hook, which runs every time, with `"onFailure": "block"` so a gate
   that crashes or times out blocks the action rather than waving it through.
-- **Measure, then keep.** Golden tasks (ten, with "done" lines, two runs before
-  and after) decide whether any change to the crew stays. That includes this
-  shape: the legacy agents ship alongside for anyone whose numbers say otherwise.
+- **Measure, then keep.** Golden tasks decide whether any change to the crew
+  stays: ten everyday tasks, one per chain, one per hard rule and one failure
+  task, each with a "done" line, run twice before and twice after. That
+  includes this shape: the legacy agents ship alongside for anyone whose
+  numbers say otherwise. Anthropic's fold article asks for the same coverage
+  ("a task for every chain of agents" and "for every rule the agent must not
+  break", each run more than once).
+- **Measured by a script, safely.** Running hundreds of test sessions by hand
+  is the step people skip, so `golden.py` runs them: fresh `claude -p`
+  sessions of the main loop, with `test-mode.py` passed through `--settings`.
+  Test mode allows reads and blocks every send, push, payment, changing
+  connected tool and write outside a scratch folder, failing closed. Test
+  sessions run with bypass permissions so reads never stall on a prompt nobody
+  can answer; test mode is what keeps them safe, so a canary session must prove
+  it active before any task runs. A grader session with no tools scores each
+  run from the tool log, not from the answer's claims. When two hooks deny one
+  call, Claude sees one reason, so gates are proved by their direct script
+  test, and gate tasks prove that the session stops and tries no other route.
 
 ## The division abstraction
 
@@ -88,8 +103,18 @@ failure policy, so Codex gates deny and fail open; the reference says so.
 The installer owns first-time rendering. `update-crew` owns existing
 installations: it inventories before writing, preserves user-specific facts and
 workspace context, audits each role (fold, merge, call as a tool, keep), backs up
-the whole crew with a restore note, and folds one role at a time against the
-golden tasks. Plugin version bumps are required because Claude Code uses the
+the whole crew with a restore note, and changes one role at a time against the
+golden tasks. The user approves one plan; after that the golden-task verdict
+decides each role, because that is the rule the user would apply anyway. A
+merge takes the union of both roles' rules, every change gets a rule map that
+accounts for each old line, and an independent reviewer checks the map before
+the change is measured: a dropped rule only shows in a golden task that happens
+to test it, while the map shows it at once.
+
+Both write the kit version to `crew-kit-version`. The plugin's SessionStart
+hook compares it with the installed plugin and says one line when the crew is
+behind, because a plugin that updates silently can leave a crew on old doctrine
+for weeks. Plugin version bumps are required because Claude Code uses the
 manifest version as the update cache key.
 
 ## Provenance

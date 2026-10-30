@@ -1,0 +1,17 @@
+{
+  "description": "One line at session start when the installed crew is older than the kit.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/crew-version-check.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.8.0 — 2026-11-10
+
+The chief of staff is rewritten for the newest models (Fable 5.2 generation).
+These models follow written rules almost to the letter, so rules written for
+older models now work against you. Re-render your main loop with `update-crew`.
+
+- **Model and effort section.** Run the main loop on a strong model at `high`
+  effort and set it explicitly. `xhigh` only where it has shown a gain, never
+  `max`. Lines asking the model to think less are ignored, so lower effort
+  instead. The most expensive model is kept for sessions that need it, because
+  the main loop runs all day.
+- **Fewer helpers.** New models start helpers to check their own work when
+  invited, and each helper can be a large share of a session's usage. The main
+  loop now checks routine work itself.
+- **Prove it before you report it.** New models state inferences as facts more
+  often. The main loop checks a claim before reporting it and never writes a
+  stand-in for a missing file.
+- **Finishing work.** New models stop early more often, especially at low and
+  medium effort. The old "stop after two failures" line is replaced: ordinary
+  obstacles get worked through, deliberate blockers get left alone and reported.
+- **Updates and reports.** An opening line, an update every few tool calls and a
+  recap that stands on its own. No step-by-step reasoning in replies, because new
+  models may decline it as reasoning extraction.
+- **Ownership is opt-in.** Telling the model a codebase is its own makes it
+  restructure and add tests, which is right for your own app and wrong for a
+  client's. The main loop only does it when the user says so.
+
 ## v0.7.1 — 2026-10-30
 
 Found by running v0.7.0 on the author's own crew (15 golden tasks, 2 runs each).
